@@ -1,0 +1,224 @@
+@model Zaiko.ViewModels.ClientEditViewModel
+@{
+    ViewData["Title"] = Model.ClientId.HasValue ? "取引先編集" : "取引先登録";
+    var indexed = Model.Products.Select((p, i) => (p, i)).ToList();
+    var groups = indexed.GroupBy(x => x.p.ProductName).ToList();
+}
+
+@section Styles {
+<style>
+.form-section { margin-bottom: var(--spacing-lg); }
+.form-section-title { font-size: var(--font-size-base); font-weight: 500; margin-bottom: var(--spacing-md); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); }
+.required-mark { color: var(--color-danger-text); }
+.field-error { font-size: var(--font-size-sm); color: var(--color-danger-text); }
+.form-actions { display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg); }
+
+.product-name-cell { vertical-align: middle; font-weight: 500; min-width: 160px; }
+.group-label { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; }
+.group-label input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent); }
+.row-disabled td { color: var(--color-text-muted); }
+.row-disabled .wholesale-price { color: var(--color-text-muted); }
+.rate-input-wrap { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-xs); }
+.rate-input { width: 80px; height: 32px; text-align: right; padding: 0 var(--spacing-sm); }
+.rate-input:disabled { background: var(--color-bg-page); color: var(--color-text-muted); cursor: not-allowed; }
+.empty-row td { text-align: center; color: var(--color-text-muted); padding: var(--spacing-xl); }
+
+.status-section { margin-top: var(--spacing-xl); }
+.status-row { display: flex; align-items: center; gap: var(--spacing-lg); }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">@ViewData["Title"]</h1>
+</div>
+
+<form asp-controller="Client" asp-action="Edit" method="post" id="edit-form">
+  @Html.AntiForgeryToken()
+  <input type="hidden" asp-for="ClientId" />
+
+  <!-- 基本情報 -->
+  <div class="card form-section">
+    <div class="form-section-title">基本情報</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label asp-for="ClientName" class="form-label">
+          取引先名 <span class="required-mark">*</span>
+        </label>
+        <input asp-for="ClientName" class="form-input" placeholder="例: ○○商会" />
+        <span asp-validation-for="ClientName" class="field-error"></span>
+      </div>
+      <div class="form-group">
+        <label asp-for="FaxNumber" class="form-label">FAX番号</label>
+        <input asp-for="FaxNumber" class="form-input" placeholder="例: 03-0000-0000" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 取扱商品・掛け率 -->
+  <div class="card form-section">
+    <div class="form-section-title">取扱商品・掛け率</div>
+    @if (!Model.Products.Any())
+    {
+      <p class="text-muted text-sm">商品が登録されていません。先に商品を登録してください。</p>
+    }
+    else
+    {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>品名</th>
+              <th>色</th>
+              <th class="text-right">上代（円）</th>
+              <th class="text-right">掛け率</th>
+              <th class="text-right">下代（円）</th>
+            </tr>
+          </thead>
+          <tbody>
+            @{ int groupIdx = 0; }
+            @foreach (var grp in groups)
+            {
+              var items = grp.ToList();
+              int rowspan = items.Count;
+              bool groupChecked = items.Any(x => x.p.IsChecked);
+
+              @for (int gi = 0; gi < items.Count; gi++)
+              {
+                var (p, listIdx) = items[gi];
+                bool isFirst = gi == 0;
+                string rowCls = p.IsChecked ? "product-row" : "product-row row-disabled";
+                decimal wholesale = p.RetailPrice * p.CommissionRate;
+
+                <tr class="@rowCls" data-group="@groupIdx">
+                  @if (isFirst)
+                  {
+                    <td rowspan="@rowspan" class="product-name-cell">
+                      <label class="group-label">
+                        <input type="checkbox" class="group-check"
+                               data-group="@groupIdx"
+                               @(groupChecked ? "checked" : "") />
+                        @p.ProductName
+                      </label>
+                    </td>
+                  }
+                  <td>
+                    <input type="hidden" name="Products[@listIdx].ProductId" value="@p.ProductId" />
+                    <input type="hidden" name="Products[@listIdx].IsChecked"
+                           class="is-checked-hidden" data-group="@groupIdx"
+                           value="@(p.IsChecked ? "true" : "false")" />
+                    @(p.ColorName ?? "—")
+                  </td>
+                  <td class="text-right">@p.RetailPrice.ToString("N0")</td>
+                  <td>
+                    <div class="rate-input-wrap">
+                      <input type="number" step="0.001" min="0" max="1"
+                             class="form-input rate-input"
+                             data-group="@groupIdx"
+                             data-retail="@p.RetailPrice"
+                             data-list-idx="@listIdx"
+                             value="@p.CommissionRate.ToString("0.###")"
+                             @(!p.IsChecked ? "disabled" : "") />
+                      <input type="hidden" name="Products[@listIdx].CommissionRate"
+                             class="rate-hidden" data-list-idx="@listIdx"
+                             value="@p.CommissionRate" />
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="wholesale-price">@wholesale.ToString("N0")</span>
+                  </td>
+                </tr>
+              }
+              groupIdx++;
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <div class="form-actions">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+    <button type="button" class="btn btn-primary" onclick="confirmSave()">保存する</button>
+  </div>
+</form>
+
+@if (Model.ClientId.HasValue)
+{
+  <div class="status-section">
+    <div class="card">
+      <div class="form-section-title">ステータス管理</div>
+      <div class="status-row">
+        <span>
+          現在の状態:
+          @if (Model.IsActive)
+          {
+            <span class="badge badge-success">有効</span>
+          }
+          else
+          {
+            <span class="badge">無効</span>
+          }
+        </span>
+        <form method="post" action="@Url.Action("ToggleActive", new { id = Model.ClientId })">
+          @Html.AntiForgeryToken()
+          <button type="submit" class="btn @(Model.IsActive ? "btn-secondary" : "btn-primary")"
+                  onclick="return confirm('@(Model.IsActive ? "この取引先を無効化しますか？" : "この取引先を有効化しますか？")')">
+            @(Model.IsActive ? "無効化する" : "有効化する")
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+@section Scripts {
+@await Html.PartialAsync("_ValidationScriptsPartial")
+<script>
+// グループチェックボックス操作
+document.querySelectorAll('.group-check').forEach(function(chk) {
+    chk.addEventListener('change', function() {
+        var g = this.dataset.group;
+        var on = this.checked;
+        document.querySelectorAll('tr[data-group="' + g + '"]').forEach(function(tr) {
+            tr.classList.toggle('row-disabled', !on);
+        });
+        document.querySelectorAll('.is-checked-hidden[data-group="' + g + '"]').forEach(function(el) {
+            el.value = on ? 'true' : 'false';
+        });
+        document.querySelectorAll('.rate-input[data-group="' + g + '"]').forEach(function(el) {
+            el.disabled = !on;
+        });
+    });
+});
+
+// 掛け率入力 → 下代リアルタイム更新
+document.querySelectorAll('.rate-input').forEach(function(inp) {
+    function sync() {
+        var retail = parseFloat(inp.dataset.retail) || 0;
+        var rate = parseFloat(inp.value) || 0;
+        var wholesale = retail * rate;
+        var tr = inp.closest('tr');
+        tr.querySelector('.wholesale-price').textContent = wholesale.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+
+        var idx = inp.dataset.listIdx;
+        var hidden = document.querySelector('.rate-hidden[data-list-idx="' + idx + '"]');
+        if (hidden) hidden.value = inp.value;
+    }
+    inp.addEventListener('input', sync);
+    inp.addEventListener('change', sync);
+});
+
+function confirmSave() {
+    // 保存前にrate-inputの値をhiddenに同期
+    document.querySelectorAll('.rate-input').forEach(function(inp) {
+        var idx = inp.dataset.listIdx;
+        var hidden = document.querySelector('.rate-hidden[data-list-idx="' + idx + '"]');
+        if (hidden) hidden.value = inp.value;
+    });
+    if (confirm('取引先情報を保存します。よろしいですか？')) {
+        document.getElementById('edit-form').submit();
+    }
+}
+</script>
+}

@@ -1,0 +1,112 @@
+@model Zaiko.ViewModels.SalesReportPreviewViewModel
+@{
+    Layout = null;
+    var dates = Model.DeliveryDates;
+    var ymParts = Model.YearMonth.Split('-');
+    string ymLabel = ymParts.Length == 2 ? $"{ymParts[0]}年{int.Parse(ymParts[1])}月" : Model.YearMonth;
+}
+
+<div style="font-size:var(--font-size-sm);">
+  <div style="margin-bottom:var(--spacing-md);">
+    <strong>@Model.ClientName</strong> &nbsp;|&nbsp; @ymLabel
+  </div>
+  @if (!Model.Rows.Any())
+  {
+    <p style="color:var(--color-text-muted);">この期間の売上報告データがありません。</p>
+  }
+  else
+  {
+    int totalCarryOver = 0, totalDelivery = 0, totalSalesQty = 0;
+    decimal totalSalesAmount = 0;
+
+    <div class="table-wrapper">
+      <table class="table" style="font-size:var(--font-size-xs)">
+        <thead>
+          <tr>
+            <th rowspan="2">品名</th>
+            <th rowspan="2">色</th>
+            <th rowspan="2" style="text-align:right">上代</th>
+            <th rowspan="2" style="text-align:right">下代</th>
+            <th rowspan="2" style="text-align:right">期首</th>
+            @if (dates.Count > 0)
+            {
+              <th colspan="@dates.Count" style="text-align:center">期間内納品数</th>
+            }
+            else
+            {
+              <th style="text-align:center">納品</th>
+            }
+            <th rowspan="2" style="text-align:right">納品計</th>
+            <th rowspan="2" style="text-align:right">期末</th>
+            <th rowspan="2" style="text-align:right">売上点数</th>
+            <th rowspan="2" style="text-align:right">売上額</th>
+          </tr>
+          <tr>
+            @if (dates.Count > 0)
+            {
+              @foreach (var d in dates)
+              {
+                <th style="text-align:right">@d.Month/@d.Day</th>
+              }
+            }
+            else
+            {
+              <th>—</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var grp in Model.Rows.GroupBy(r => r.ProductName).Select(g => new { Name = g.Key, Rows = g.ToList() }))
+          {
+            int rowspan = grp.Rows.Count;
+            @for (int gi = 0; gi < grp.Rows.Count; gi++)
+            {
+              var row = grp.Rows[gi];
+              bool isFirst = gi == 0;
+              decimal wholesale = row.RetailPrice * row.CommissionRate;
+              int salesQty = row.CarryOverQuantity + row.DeliveryTotal - row.ClosingStock;
+              decimal salesAmount = salesQty * wholesale;
+              totalCarryOver += row.CarryOverQuantity;
+              totalDelivery += row.DeliveryTotal;
+              totalSalesQty += salesQty;
+              totalSalesAmount += salesAmount;
+
+              <tr>
+                @if (isFirst)
+                {
+                  <td rowspan="@rowspan" style="vertical-align:middle;font-weight:500">@grp.Name</td>
+                }
+                <td>@(row.ColorName ?? "—")</td>
+                <td style="text-align:right">@row.RetailPrice.ToString("N0")</td>
+                <td style="text-align:right">@wholesale.ToString("N2")</td>
+                <td style="text-align:right">@row.CarryOverQuantity</td>
+                @if (dates.Count > 0)
+                {
+                  @foreach (var d in dates)
+                  {
+                    <td style="text-align:right">@(row.DeliveryByDate.TryGetValue(d, out var q) ? q.ToString() : "")</td>
+                  }
+                }
+                else
+                {
+                  <td style="text-align:right">—</td>
+                }
+                <td style="text-align:right">@row.DeliveryTotal</td>
+                <td style="text-align:right">@row.ClosingStock</td>
+                <td style="text-align:right">@salesQty</td>
+                <td style="text-align:right">@salesAmount.ToString("N0")</td>
+              </tr>
+            }
+          }
+          <tr style="font-weight:500;background:var(--color-bg-page)">
+            <td colspan="@(5 + Math.Max(dates.Count, 1))">合計</td>
+            <td style="text-align:right">@totalDelivery</td>
+            <td style="text-align:right">—</td>
+            <td style="text-align:right">@totalSalesQty</td>
+            <td style="text-align:right">@totalSalesAmount.ToString("N0")</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

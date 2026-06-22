@@ -1,0 +1,227 @@
+@model Zaiko.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "ダッシュボード";
+    var ymParts = Model.SalesYearMonth.Split('-');
+    string salesYmLabel = ymParts.Length == 2 ? $"{ymParts[0]}年{int.Parse(ymParts[1])}月" : Model.SalesYearMonth;
+    var curParts = Model.CurrentYearMonth.Split('-');
+    string curMonthLabel = curParts.Length == 2 ? $"{int.Parse(curParts[1])}月" : Model.CurrentYearMonth;
+}
+
+@section Styles {
+<style>
+.summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--spacing-md); margin-bottom:var(--spacing-xl); }
+.summary-card { background:var(--color-bg-page); border-radius:var(--radius-md); padding:var(--spacing-md); }
+.summary-card-label { font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm); }
+.summary-card-value { font-size:24px; font-weight:500; line-height:1; }
+.summary-card-sub { font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--spacing-xs); }
+.section-title { font-size:var(--font-size-lg); font-weight:500; margin-bottom:var(--spacing-md); }
+.two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:var(--spacing-lg); margin-bottom:var(--spacing-xl); }
+.recent-section { margin-bottom:var(--spacing-xl); }
+.quick-actions { display:flex; gap:var(--spacing-sm); flex-wrap:wrap; margin-bottom:var(--spacing-xl); }
+.rank-row { display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) 0; border-bottom:0.5px solid var(--color-border); }
+.rank-row:last-child { border-bottom:none; }
+.rank-num { font-size:var(--font-size-sm); color:var(--color-text-muted); width:16px; text-align:center; flex-shrink:0; }
+.rank-name { flex:1; font-size:var(--font-size-sm); }
+.rank-bar-wrap { width:120px; height:6px; background:var(--color-bg-page); border-radius:100px; flex-shrink:0; }
+.rank-bar { height:100%; background:var(--color-accent); border-radius:100px; }
+.rank-bar.other { background:var(--color-text-muted); }
+.rank-value { font-size:var(--font-size-sm); font-weight:500; width:70px; text-align:right; flex-shrink:0; }
+.alert-row { display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) 0; border-bottom:0.5px solid var(--color-border); font-size:var(--font-size-sm); }
+.alert-row:last-child { border-bottom:none; }
+.alert-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-warning { background:var(--color-accent); }
+.dot-danger  { background:var(--color-danger-text); }
+.alert-name { flex:1; }
+.alert-client { color:var(--color-text-secondary); width:140px; flex-shrink:0; font-size:var(--font-size-xs); }
+.alert-stock { font-weight:500; width:32px; text-align:right; flex-shrink:0; }
+</style>
+}
+
+<div class="page-header flex-center justify-between">
+  <div>
+    <h1 class="page-title">ダッシュボード</h1>
+    <p class="page-subtitle">@salesYmLabel 現在の状況</p>
+  </div>
+  <div class="flex-center gap-sm">
+    <a class="btn btn-primary" asp-controller="SalesReportHistory" asp-action="Index">
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      売上報告履歴
+    </a>
+  </div>
+</div>
+
+<!-- サマリーカード -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-card-label">取引先数</div>
+    <div class="summary-card-value">@Model.ActiveClientCount</div>
+    <div class="summary-card-sub">社（有効）</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-card-label">今月の納品件数</div>
+    <div class="summary-card-value">@Model.MonthlyDeliveryCount</div>
+    <div class="summary-card-sub">件（@(curMonthLabel)）</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-card-label">売上合計（@salesYmLabel）</div>
+    <div class="summary-card-value">¥@Model.TotalSalesAmount.ToString("N0")</div>
+    @if (Model.PrevMonthSalesAmount.HasValue && Model.PrevMonthSalesAmount.Value != 0)
+    {
+      var diff = Model.TotalSalesAmount - Model.PrevMonthSalesAmount.Value;
+      var pct = (double)diff / (double)Model.PrevMonthSalesAmount.Value * 100;
+      string sign = pct >= 0 ? "+" : "";
+      <div class="summary-card-sub">前月比 @(sign)@(pct.ToString("F0"))%</div>
+    }
+    else
+    {
+      <div class="summary-card-sub">前月データなし</div>
+    }
+  </div>
+  <div class="summary-card">
+    <div class="summary-card-label">在庫アラート</div>
+    @if (Model.DangerCount > 0)
+    {
+      <div class="summary-card-value" style="color:var(--color-danger-text);">@Model.AlertCount</div>
+    }
+    else if (Model.AlertCount > 0)
+    {
+      <div class="summary-card-value" style="color:var(--color-accent);">@Model.AlertCount</div>
+    }
+    else
+    {
+      <div class="summary-card-value">@Model.AlertCount</div>
+    }
+    <div class="summary-card-sub">件（残り5点以下）</div>
+  </div>
+</div>
+
+<!-- クイックアクション -->
+<div class="quick-actions">
+  <a class="btn btn-secondary" asp-controller="Delivery" asp-action="Index">
+    <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+    納品を登録する
+  </a>
+  <a class="btn btn-secondary" asp-controller="SalesReport" asp-action="Index">
+    <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4h12M10 4v4"/></svg>
+    売上報告を入力する
+  </a>
+</div>
+
+<!-- 取引先別売上・在庫アラート -->
+<div class="two-col">
+
+  <!-- 取引先別売上ランキング -->
+  <div class="card">
+    <div class="card-title">取引先別売上（@salesYmLabel）</div>
+    @if (!Model.SalesRanking.Any())
+    {
+      <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">売上データがありません</p>
+    }
+    else
+    {
+      int rank = 1;
+      @foreach (var row in Model.SalesRanking)
+      {
+        <div class="rank-row">
+          <span class="rank-num">@(row.IsOther ? "…" : rank.ToString())</span>
+          <span class="rank-name">@row.ClientName</span>
+          <div class="rank-bar-wrap">
+            <div class="rank-bar @(row.IsOther ? "other" : "")" style="width:@(row.BarWidthPercent.ToString("F0"))%;"></div>
+          </div>
+          <span class="rank-value">¥@row.SalesAmount.ToString("N0")</span>
+        </div>
+        if (!row.IsOther) rank++;
+      }
+    }
+  </div>
+
+  <!-- 在庫アラート -->
+  <div class="card">
+    <div class="card-title">
+      在庫アラート
+      @if (Model.AlertCount > 0)
+      {
+        <span class="badge badge-danger" style="font-size:11px;vertical-align:middle;">残り5点以下</span>
+      }
+    </div>
+    @if (!Model.StockAlerts.Any())
+    {
+      <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">アラート対象の商品はありません</p>
+    }
+    else
+    {
+      @foreach (var alert in Model.StockAlerts)
+      {
+        <div class="alert-row">
+          <div class="alert-dot @(alert.IsDanger ? "dot-danger" : "dot-warning")"></div>
+          <span class="alert-name">@alert.ProductDisplay</span>
+          <span class="alert-client">@alert.ClientName</span>
+          <span class="alert-stock" style="color:@(alert.IsDanger ? "var(--color-danger-text)" : "var(--color-accent)")">@alert.CurrentStock</span>
+        </div>
+      }
+      if (Model.AlertCount > Model.StockAlerts.Count)
+      {
+        <div style="padding:var(--spacing-sm) 0;font-size:var(--font-size-xs);color:var(--color-text-muted);">
+          他 @(Model.AlertCount - Model.StockAlerts.Count) 件…
+        </div>
+      }
+      <div style="margin-top:var(--spacing-md);padding-top:var(--spacing-md);border-top:0.5px solid var(--color-border);">
+        <span style="font-size:var(--font-size-xs);color:var(--color-text-muted);">
+          ● 赤：残り1〜2点　● 橙：残り3〜5点
+        </span>
+      </div>
+    }
+  </div>
+
+</div>
+
+<!-- 最近の納品履歴 -->
+<div class="recent-section">
+  <div class="card">
+    <div class="flex-center justify-between mb-md">
+      <div class="card-title" style="margin-bottom:0;">最近の納品履歴</div>
+      <a asp-controller="DeliveryHistory" asp-action="Index" style="font-size:var(--font-size-sm);">すべて見る →</a>
+    </div>
+    @if (!Model.RecentDeliveries.Any())
+    {
+      <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">納品データがありません</p>
+    }
+    else
+    {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>納品日</th>
+              <th>取引先</th>
+              <th style="text-align:right;">品目数</th>
+              <th style="text-align:right;">合計数量</th>
+              <th>種別</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var d in Model.RecentDeliveries)
+            {
+              <tr>
+                <td>@d.DeliveredAt.ToString("yyyy-MM-dd")</td>
+                <td>@d.ClientName</td>
+                <td style="text-align:right;">@d.ProductCount</td>
+                <td style="text-align:right;">@d.TotalQuantity</td>
+                <td>
+                  @if (d.IsCarryOver)
+                  {
+                    <span class="badge badge-warning">繰越</span>
+                  }
+                  else
+                  {
+                    <span class="badge badge-info">通常</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

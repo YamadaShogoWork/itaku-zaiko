@@ -1,0 +1,182 @@
+@model Zaiko.ViewModels.SalesReportHistoryViewModel
+@{
+    ViewData["Title"] = "売上報告履歴";
+}
+
+@section Styles {
+<style>
+.search-bar { display:flex; align-items:flex-end; gap:var(--spacing-md); flex-wrap:wrap; }
+.search-bar .form-group { margin-bottom:0; }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); color:var(--color-accent); background:none; border:none; padding:0; cursor:pointer; font-family:inherit; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link.disabled { color:var(--color-text-muted); cursor:not-allowed; pointer-events:none; }
+.action-link:last-child { margin-right:0; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:flex-start; justify-content:center; padding:var(--spacing-xl) var(--spacing-md); overflow-y:auto; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:var(--color-bg-card); border-radius:var(--radius-lg); padding:var(--spacing-xl); width:100%; max-width:900px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.modal-title { font-size:var(--font-size-lg); font-weight:500; margin-bottom:var(--spacing-md); }
+.modal-actions { display:flex; gap:var(--spacing-md); justify-content:flex-end; margin-top:var(--spacing-lg); }
+#preview-content { min-height:80px; }
+td.num { text-align:right; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">売上報告履歴</h1>
+  <p class="page-subtitle">登録済みの売上報告を確認・削除・帳票再出力します</p>
+</div>
+
+<!-- 検索条件 -->
+<div class="card" style="margin-bottom:var(--spacing-lg)">
+  <form method="get" action="@Url.Action("Index")" class="search-bar">
+    <div class="form-group">
+      <label class="form-label">取引先</label>
+      <select name="clientId" class="form-select" style="width:200px">
+        <option value="">すべて</option>
+        @foreach (var item in Model.Clients)
+        {
+          @if (item.Value == Model.ClientId?.ToString())
+          {
+            <option value="@item.Value" selected>@item.Text</option>
+          }
+          else
+          {
+            <option value="@item.Value">@item.Text</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象年月</label>
+      <input type="month" name="yearMonth" class="form-input" style="width:160px"
+             value="@Model.YearMonth" />
+    </div>
+    <button type="submit" class="btn btn-secondary">絞り込む</button>
+  </form>
+</div>
+
+<!-- 一覧 -->
+@if (!Model.HasSearch)
+{
+  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
+    条件を選択して「絞り込む」をクリックしてください
+  </div>
+}
+else
+{
+  <div class="card">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>対象年月</th>
+            <th>取引先</th>
+            <th class="num">品目数</th>
+            <th class="num">売上点数</th>
+            <th class="num">売上額</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!Model.Rows.Any())
+          {
+            <tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">該当する売上報告がありません</td></tr>
+          }
+          @foreach (var row in Model.Rows)
+          {
+            var ymParts = row.YearMonth.Split('-');
+            string ymLabel = ymParts.Length == 2 ? $"{ymParts[0]}年{int.Parse(ymParts[1])}月" : row.YearMonth;
+            <tr>
+              <td>@ymLabel</td>
+              <td>@row.ClientName</td>
+              <td class="num">@row.ProductCount</td>
+              <td class="num">@row.TotalSalesQty</td>
+              <td class="num">@row.TotalSalesAmount.ToString("N0")</td>
+              <td>
+                @if (row.CanEdit)
+                {
+                  <a href="@Url.Action("Index", "SalesReport", new { clientId = row.ClientId, yearMonth = row.YearMonth })"
+                     class="action-link">編集</a>
+                }
+                else
+                {
+                  <span class="action-link disabled">編集</span>
+                }
+
+                <button type="button" class="action-link"
+                        onclick="openPreview(@row.ClientId, '@row.YearMonth')">帳票</button>
+
+                @if (row.CanDelete)
+                {
+                  <form method="post" action="@Url.Action("Delete")" style="display:inline;"
+                        onsubmit="return confirm('@ymLabel の売上報告（@row.ClientName）を削除します。\nよろしいですか？')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="clientId" value="@row.ClientId" />
+                    <input type="hidden" name="yearMonth" value="@row.YearMonth" />
+                    <input type="hidden" name="returnYearMonth" value="@Model.YearMonth" />
+                    <button type="submit" class="action-link danger">削除</button>
+                  </form>
+                }
+                else
+                {
+                  <span class="action-link disabled">削除</span>
+                  <span class="badge badge-warning" style="font-size:var(--font-size-xs);margin-left:4px">翌月分登録済み</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- 帳票プレビューモーダル -->
+<div class="modal-overlay" id="preview-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="preview-title">帳票プレビュー</div>
+    <div id="preview-content">
+      <div style="text-align:center;padding:var(--spacing-xl);color:var(--color-text-muted);">読み込み中...</div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="closePreview()">閉じる</button>
+      <a id="preview-download-link" href="#" class="btn btn-primary">Excel出力</a>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+var currentClientId = null, currentYearMonth = null;
+
+function openPreview(clientId, yearMonth) {
+    currentClientId = clientId;
+    currentYearMonth = yearMonth;
+    var modal = document.getElementById('preview-modal');
+    var content = document.getElementById('preview-content');
+    var dlLink = document.getElementById('preview-download-link');
+
+    content.innerHTML = '<div style="text-align:center;padding:var(--spacing-xl);color:var(--color-text-muted);">読み込み中...</div>';
+    modal.classList.add('active');
+
+    dlLink.href = '@Url.Action("DownloadExcel")'.replace('__', '') +
+        '?clientId=' + clientId + '&yearMonth=' + encodeURIComponent(yearMonth);
+
+    fetch('@Url.Action("Preview")?clientId=' + clientId + '&yearMonth=' + encodeURIComponent(yearMonth))
+        .then(function(r) { return r.text(); })
+        .then(function(html) { content.innerHTML = html; })
+        .catch(function() { content.innerHTML = '<p style="color:red">読み込みに失敗しました</p>'; });
+}
+
+function closePreview() {
+    document.getElementById('preview-modal').classList.remove('active');
+}
+
+document.getElementById('preview-modal').addEventListener('click', function(e) {
+    if (e.target === this) closePreview();
+});
+</script>
+}

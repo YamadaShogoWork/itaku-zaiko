@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.db
+*.db-shm
+*.db-wal
+
+# Node.js (Playwright用)
+node_modules/
+package-lock.json
+
+# テスト・一時ファイル
+test_browser.js
+check_users.js
+screenshot_*.png
+
+# 環境設定
+appsettings.Development.json

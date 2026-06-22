@@ -1,0 +1,111 @@
+@model List<Zaiko.ViewModels.ColorIndexItemViewModel>
+@{
+    ViewData["Title"] = "色マスタ管理";
+}
+
+@section Styles {
+<style>
+.list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+.inline-edit-form { display:none; align-items:center; gap:var(--spacing-sm); }
+.inline-edit-form.active { display:flex; }
+.color-name-display { display:flex; align-items:center; gap:var(--spacing-sm); }
+.color-name-display.hidden { display:none; }
+.edit-input { width:200px; height:36px; }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); cursor:pointer; color:var(--color-accent); background:none; border:none; padding:0; font-family:inherit; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link:last-child { margin-right:0; }
+.add-form { display:flex; align-items:flex-end; gap:var(--spacing-md); margin-bottom:var(--spacing-lg); }
+.add-form .form-group { margin-bottom:0; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">色マスタ管理</h1>
+  <p class="page-subtitle">商品に使用する色の一覧を管理します</p>
+</div>
+
+<!-- 新規追加フォーム -->
+<div class="card" style="margin-bottom:var(--spacing-lg)">
+  <div class="form-section-title" style="font-size:var(--font-size-base);font-weight:500;margin-bottom:var(--spacing-md);">新規追加</div>
+  <form method="post" action="@Url.Action("Create")" class="add-form">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+      <label class="form-label">色名 <span style="color:var(--color-danger-text)">*</span></label>
+      <input type="text" name="colorName" class="form-input" style="width:240px;" placeholder="例: 白" required />
+    </div>
+    <button type="submit" class="btn btn-primary">追加する</button>
+  </form>
+</div>
+
+<!-- 一覧 -->
+<div class="card">
+  <div class="list-header" style="margin-bottom:var(--spacing-md);">
+    <span class="text-muted text-sm">全@Model.Count件</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>色名</th>
+          <th style="text-align:right;">使用商品数</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Any())
+        {
+          <tr><td colspan="3" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">色が登録されていません</td></tr>
+        }
+        @foreach (var c in Model)
+        {
+          <tr id="row-@c.ColorId">
+            <td>
+              <div class="color-name-display" id="display-@c.ColorId">
+                <span>@c.ColorName</span>
+              </div>
+              <form method="post" action="@Url.Action("Update", new { id = c.ColorId })"
+                    class="inline-edit-form" id="edit-form-@c.ColorId">
+                @Html.AntiForgeryToken()
+                <input type="text" name="colorName" class="form-input edit-input"
+                       value="@c.ColorName" required />
+                <button type="submit" class="btn btn-primary" style="height:36px;padding:0 var(--spacing-md);">保存</button>
+                <button type="button" class="action-link" onclick="cancelEdit(@c.ColorId)">キャンセル</button>
+              </form>
+            </td>
+            <td style="text-align:right;">@c.ProductCount</td>
+            <td>
+              <button type="button" class="action-link" onclick="startEdit(@c.ColorId)">編集</button>
+              @if (c.ProductCount == 0)
+              {
+                <form method="post" action="@Url.Action("Delete", new { id = c.ColorId })" style="display:inline;"
+                      onsubmit="return confirm('色「@c.ColorName」を削除します。よろしいですか？')">
+                  @Html.AntiForgeryToken()
+                  <button type="submit" class="action-link danger">削除</button>
+                </form>
+              }
+              else
+              {
+                <span class="action-link" style="color:var(--color-text-muted);cursor:default;" title="使用中の色は削除できません">削除</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function startEdit(id) {
+    document.getElementById('display-' + id).classList.add('hidden');
+    document.getElementById('edit-form-' + id).classList.add('active');
+    document.querySelector('#edit-form-' + id + ' input[name=colorName]').focus();
+}
+function cancelEdit(id) {
+    document.getElementById('display-' + id).classList.remove('hidden');
+    document.getElementById('edit-form-' + id).classList.remove('active');
+}
+</script>
+}

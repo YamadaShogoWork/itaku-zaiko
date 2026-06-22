@@ -1,0 +1,177 @@
+@model Zaiko.ViewModels.DeliveryInputViewModel
+@{
+    ViewData["Title"] = "納品登録";
+    int totalRows = Model.Groups.Sum(g => g.Rows.Count);
+    int rowIndex = 0;
+}
+
+@section Styles {
+<style>
+.search-bar { display:flex; align-items:flex-end; gap:var(--spacing-md); flex-wrap:wrap; margin-bottom:var(--spacing-lg); }
+.search-bar .form-group { margin-bottom:0; min-width:180px; }
+.status-bar { display:flex; gap:var(--spacing-xl); align-items:center; margin-bottom:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); background:var(--color-accent-light); border-radius:var(--radius-sm); font-size:var(--font-size-sm); }
+.qty-input { width:80px; height:36px; text-align:right; }
+.product-name-cell { vertical-align:middle; font-weight:500; }
+.total-row td { font-weight:500; background:var(--color-bg-page); }
+.table-actions { display:flex; gap:var(--spacing-md); justify-content:flex-end; margin-top:var(--spacing-md); }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">納品登録</h1>
+  <p class="page-subtitle">取引先・納品日を選択して納品数量を入力し、Excelを出力します</p>
+</div>
+
+<!-- 検索条件 -->
+<div class="card" style="margin-bottom:var(--spacing-lg)">
+  <form method="get" action="@Url.Action("Index")" class="search-bar">
+    <div class="form-group">
+      <label class="form-label">取引先</label>
+      <select name="clientId" class="form-select" style="width:200px">
+        <option value="">選択してください</option>
+        @foreach (var item in Model.Clients)
+        {
+          @if (item.Value == Model.ClientId?.ToString())
+          {
+            <option value="@item.Value" selected>@item.Text</option>
+          }
+          else
+          {
+            <option value="@item.Value">@item.Text</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">納品日</label>
+      <input type="date" name="date" class="form-input" style="width:160px"
+             value="@Model.DeliveryDate" />
+    </div>
+    <button type="submit" class="btn btn-secondary">表示する</button>
+  </form>
+</div>
+
+@if (Model.HasTable)
+{
+  <div class="status-bar">
+    <span>取引先: <strong>@Model.ClientName</strong></span>
+    <span>納品日: <strong>@(DateOnly.TryParseExact(Model.DeliveryDate ?? "", "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var sd) ? $"{sd.Year}年{sd.Month}月{sd.Day}日" : Model.DeliveryDate)</strong></span>
+    <span>入力中: <span id="count-filled">0</span> / @totalRows 件</span>
+  </div>
+
+  <form method="post" action="@Url.Action("Save")" id="save-form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+    <input type="hidden" name="DeliveryDate" value="@Model.DeliveryDate" />
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="table" id="delivery-table">
+          <thead>
+            <tr>
+              <th>品名</th>
+              <th>色</th>
+              <th style="text-align:right">現在庫</th>
+              <th style="text-align:right">納品数量</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var grp in Model.Groups)
+            {
+              int rowspan = grp.Rows.Count;
+              @for (int gi = 0; gi < grp.Rows.Count; gi++)
+              {
+                var row = grp.Rows[gi];
+                bool isFirst = gi == 0;
+                <tr>
+                  @if (isFirst)
+                  {
+                    <td rowspan="@rowspan" class="product-name-cell">@grp.ProductName</td>
+                  }
+                  <td>@(row.ColorName ?? "—")</td>
+                  <td style="text-align:right">@row.CurrentStock</td>
+                  <td style="text-align:right">
+                    <input type="hidden" name="Items[@rowIndex].ProductId" value="@row.ProductId" />
+                    <input type="number" name="Items[@rowIndex].Quantity"
+                           class="form-input qty-input delivery-qty"
+                           min="0" value="@row.Quantity"
+                           placeholder="0" />
+                  </td>
+                </tr>
+                rowIndex++;
+              }
+            }
+            <tr class="total-row">
+              <td colspan="3">合計</td>
+              <td style="text-align:right" id="total-qty">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-actions">
+      <button type="button" class="btn btn-secondary"
+              onclick="if(confirm('入力中の数量をすべてクリアしますか？')) clearAll()">クリア</button>
+      <button type="button" class="btn btn-primary"
+              onclick="submitSave()">登録してExcelを出力する</button>
+    </div>
+  </form>
+}
+else
+{
+  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
+    取引先と納品日を選択して「表示する」をクリックしてください
+  </div>
+}
+
+@section Scripts {
+<script>
+function updateTotals() {
+    var inputs = document.querySelectorAll('.delivery-qty');
+    var total = 0, filled = 0;
+    inputs.forEach(function(inp) {
+        var v = parseInt(inp.value) || 0;
+        total += v;
+        if (v > 0) filled++;
+    });
+    var totalEl = document.getElementById('total-qty');
+    var countEl = document.getElementById('count-filled');
+    if (totalEl) totalEl.textContent = total;
+    if (countEl) countEl.textContent = filled;
+}
+
+document.querySelectorAll('.delivery-qty').forEach(function(inp) {
+    inp.addEventListener('input', updateTotals);
+});
+updateTotals();
+
+function clearAll() {
+    document.querySelectorAll('.delivery-qty').forEach(function(inp) {
+        inp.value = '';
+    });
+    updateTotals();
+}
+
+function submitSave() {
+    if (confirm('納品を登録してExcelを出力します。\nよろしいですか？')) {
+        document.getElementById('save-form').submit();
+    }
+}
+
+@if (ViewData["DownloadClientId"] != null && ViewData["DownloadDate"] != null)
+{
+    <text>
+// 保存後に自動でExcelをダウンロード
+setTimeout(function() {
+    var a = document.createElement('a');
+    a.href = '@Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], date = ViewData["DownloadDate"] })';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}, 300);
+    </text>
+}
+</script>
+}

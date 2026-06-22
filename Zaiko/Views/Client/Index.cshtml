@@ -1,0 +1,77 @@
+@model List<Zaiko.ViewModels.ClientListItemViewModel>
+@{
+    ViewData["Title"] = "取引先管理";
+}
+
+@section Styles {
+<style>
+.list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link:last-child { margin-right:0; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">取引先管理</h1>
+  <p class="page-subtitle">取引先の登録・編集・取扱商品（掛け率）の管理を行います</p>
+</div>
+
+<div class="list-header">
+  <span class="text-muted text-sm">全@Model.Count件</span>
+  <a href="@Url.Action("Edit")" class="btn btn-primary">+ 新規登録</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>取引先名</th>
+          <th>FAX番号</th>
+          <th style="text-align:right;">取扱商品数</th>
+          <th>状態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var c in Model)
+        {
+          <tr>
+            <td>@c.ClientName</td>
+            <td>@(c.FaxNumber ?? "—")</td>
+            <td style="text-align:right;">@c.ClientProductCount</td>
+            <td>
+              @if (c.IsActive)
+              {
+                <span class="badge badge-success">有効</span>
+              }
+              else
+              {
+                <span class="badge">無効</span>
+              }
+            </td>
+            <td>
+              <a href="@Url.Action("Edit", new { id = c.ClientId })" class="action-link">編集</a>
+              @if (c.IsActive)
+              {
+                <form method="post" action="@Url.Action("Delete", new { id = c.ClientId })" style="display:inline;"
+                      onsubmit="return confirm('取引先「@c.ClientName」を削除します。\n関連データがある場合は削除の代わりに無効化されます。\nよろしいですか？')">
+                  @Html.AntiForgeryToken()
+                  <button type="submit" class="action-link danger" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;">削除</button>
+                </form>
+              }
+              else
+              {
+                <form method="post" action="@Url.Action("ToggleActive", new { id = c.ClientId })" style="display:inline;">
+                  @Html.AntiForgeryToken()
+                  <button type="submit" class="action-link" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;">有効化</button>
+                </form>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

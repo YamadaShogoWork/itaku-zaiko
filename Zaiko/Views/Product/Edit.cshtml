@@ -1,0 +1,191 @@
+@model Zaiko.ViewModels.ProductEditViewModel
+@{
+    ViewData["Title"] = Model.OriginalProductName != null ? "商品編集" : "商品登録";
+    bool isEdit = Model.OriginalProductName != null;
+}
+
+@section Styles {
+<style>
+.form-section { margin-bottom: var(--spacing-lg); }
+.form-section-title { font-size: var(--font-size-base); font-weight: 500; margin-bottom: var(--spacing-md); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-md); }
+.required-mark { color: var(--color-danger-text); }
+.field-error { font-size: var(--font-size-sm); color: var(--color-danger-text); display: block; }
+.form-actions { display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg); }
+
+.toggle-row { display: flex; gap: var(--spacing-xl); margin-bottom: var(--spacing-md); }
+.radio-label { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; font-size: var(--font-size-base); }
+.radio-label input[type=radio] { width: 16px; height: 16px; accent-color: var(--color-accent); cursor: pointer; }
+
+.color-grid { display: flex; flex-wrap: wrap; gap: var(--spacing-md) var(--spacing-xl); margin-top: var(--spacing-sm); }
+.color-check-label { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; font-size: var(--font-size-base); }
+.color-check-label input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--color-accent); cursor: pointer; }
+.color-check-label.has-data { opacity: 0.6; }
+.color-check-label.has-data input { cursor: not-allowed; }
+
+/* Commission dialog modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:var(--color-bg-card); border-radius:var(--radius-lg); padding:var(--spacing-xl); max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.modal-title { font-size:var(--font-size-lg); font-weight:500; margin-bottom:var(--spacing-md); }
+.modal-body { font-size:var(--font-size-sm); color:var(--color-text-secondary); line-height:1.7; margin-bottom:var(--spacing-lg); }
+.modal-body p { margin-bottom:var(--spacing-sm); }
+.modal-actions { display:flex; flex-direction:column; gap:var(--spacing-sm); }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">@ViewData["Title"]</h1>
+</div>
+
+<form asp-controller="Product" asp-action="Edit" method="post" id="edit-form">
+  @Html.AntiForgeryToken()
+  <input type="hidden" asp-for="OriginalProductName" />
+  <input type="hidden" asp-for="OriginalCommissionRate" />
+  <input type="hidden" asp-for="HasClientProducts" />
+  <input type="hidden" name="UpdateClientProducts" id="update-client-products" value="false" />
+
+  <!-- 基本情報 -->
+  <div class="card form-section">
+    <div class="form-section-title">基本情報</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label asp-for="ProductName" class="form-label">
+          品名 <span class="required-mark">*</span>
+        </label>
+        <input asp-for="ProductName" class="form-input" placeholder="例: 山菜図鑑Tシャツ" />
+        <span asp-validation-for="ProductName" class="field-error"></span>
+      </div>
+      <div class="form-group">
+        <label asp-for="RetailPrice" class="form-label">
+          上代（円） <span class="required-mark">*</span>
+        </label>
+        <input asp-for="RetailPrice" type="number" min="0" class="form-input" placeholder="例: 3300" />
+        <span asp-validation-for="RetailPrice" class="field-error"></span>
+      </div>
+      <div class="form-group">
+        <label asp-for="CommissionRate" class="form-label">
+          掛け率（標準値） <span class="required-mark">*</span>
+        </label>
+        <input asp-for="CommissionRate" type="number" step="0.01" min="0" max="1" class="form-input" id="commission-rate-input" placeholder="例: 0.6" />
+        <span asp-validation-for="CommissionRate" class="field-error"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 色バリエーション -->
+  <div class="card form-section">
+    <div class="form-section-title">色バリエーション</div>
+
+    <div class="toggle-row">
+      <label class="radio-label">
+        <input type="radio" name="HasColorVariants" value="true" id="radio-color-yes"
+               @(Model.HasColorVariants ? "checked" : "") />
+        色のバリエーションがある
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="HasColorVariants" value="false" id="radio-color-no"
+               @(!Model.HasColorVariants ? "checked" : "") />
+        色なし（単一商品として登録）
+      </label>
+    </div>
+
+    <div id="color-section" style="@(!Model.HasColorVariants ? "display:none" : "")">
+      @if (!Model.AllColors.Any())
+      {
+        <p class="text-muted text-sm">色が登録されていません。先に色マスタを登録してください。</p>
+      }
+      else
+      {
+        <div class="color-grid">
+          @foreach (var c in Model.AllColors)
+          {
+            <label class="color-check-label @(c.HasRelatedData ? "has-data" : "")"
+                   title="@(c.HasRelatedData ? "使用中のため選択を外せません" : "")">
+              <input type="checkbox" name="SelectedColorIds" value="@c.ColorId"
+                     @(c.IsChecked ? "checked" : "")
+                     @(c.HasRelatedData ? "disabled" : "") />
+              @c.ColorName
+              @if (c.HasRelatedData && c.IsChecked)
+              {
+                <input type="hidden" name="SelectedColorIds" value="@c.ColorId" />
+                <span style="font-size:var(--font-size-xs);color:var(--color-text-muted)">（使用中）</span>
+              }
+            </label>
+          }
+        </div>
+        <span asp-validation-for="SelectedColorIds" class="field-error" style="margin-top:var(--spacing-sm);display:block;"></span>
+      }
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+    <button type="button" class="btn btn-primary" onclick="handleSave()">保存する</button>
+  </div>
+</form>
+
+<!-- 掛け率反映確認ダイアログ -->
+@if (isEdit && Model.HasClientProducts)
+{
+  <div class="modal-overlay" id="commission-modal">
+    <div class="modal-box">
+      <div class="modal-title">掛け率の更新範囲を選択してください</div>
+      <div class="modal-body">
+        <p>掛け率（標準値）を変更しました。取引先ごとの掛け率設定にも反映しますか？</p>
+        <p>・<strong>標準値のみ更新</strong>: 今後新規登録する取引先設定のプレフィル値にのみ影響します。</p>
+        <p>・<strong>取引先設定も一括更新</strong>: この商品に紐づく全取引先の掛け率設定を新しい値で上書きします。</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="chooseCommission(false)">標準値のみ更新</button>
+        <button type="button" class="btn btn-primary" onclick="chooseCommission(true)">取引先設定も一括更新</button>
+      </div>
+    </div>
+  </div>
+}
+
+@section Scripts {
+@await Html.PartialAsync("_ValidationScriptsPartial")
+<script>
+// 色バリエーショントグル
+document.getElementById('radio-color-yes').addEventListener('change', function() {
+    if (this.checked) document.getElementById('color-section').style.display = '';
+});
+document.getElementById('radio-color-no').addEventListener('change', function() {
+    if (this.checked) document.getElementById('color-section').style.display = 'none';
+});
+
+// 保存ボタン処理
+function handleSave() {
+    @if (isEdit && Model.HasClientProducts)
+    {
+        <text>
+    var originalRate = parseFloat('@Model.OriginalCommissionRate.ToString("0.#####")');
+    var currentRate = parseFloat(document.getElementById('commission-rate-input').value) || 0;
+    if (Math.abs(currentRate - originalRate) > 0.00001) {
+        document.getElementById('commission-modal').classList.add('active');
+        return;
+    }
+        </text>
+    }
+    confirmAndSubmit();
+}
+
+@if (isEdit && Model.HasClientProducts)
+{
+    <text>
+function chooseCommission(updateAll) {
+    document.getElementById('commission-modal').classList.remove('active');
+    document.getElementById('update-client-products').value = updateAll ? 'true' : 'false';
+    confirmAndSubmit();
+}
+    </text>
+}
+
+function confirmAndSubmit() {
+    if (confirm('商品情報を保存します。よろしいですか？')) {
+        document.getElementById('edit-form').submit();
+    }
+}
+</script>
+}

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>売上報告入力 — 委託販売管理システム</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    /* =============================
+       売上報告入力 固有スタイル
+       ============================= */
+
+    /* 検索条件エリア */
+    .search-bar {
+      display:     flex;
+      align-items: flex-end;
+      gap:         var(--spacing-md);
+      flex-wrap:   wrap;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .search-bar .form-group {
+      margin-bottom: 0;
+      min-width: 160px;
+    }
+
+    /* 入力テーブル */
+    .input-table {
+      width:           100%;
+      border-collapse: collapse;
+      font-size:       var(--font-size-sm);
+    }
+
+    .input-table th {
+      background:    var(--color-bg-page);
+      padding:       var(--spacing-sm) var(--spacing-md);
+      text-align:    center;
+      font-weight:   500;
+      font-size:     var(--font-size-sm);
+      color:         var(--color-text-secondary);
+      border:        0.5px solid var(--color-border);
+      white-space:   nowrap;
+    }
+
+    .input-table td {
+      padding:    6px var(--spacing-md);
+      border:     0.5px solid var(--color-border);
+      color:      var(--color-text-primary);
+      text-align: center;
+    }
+
+    .input-table tbody tr:hover td {
+      background: #FFFDF8;
+    }
+
+    /* 品名列は左寄せ */
+    .input-table .col-name {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    /* 計算値列（薄いグレー背景） */
+    .input-table .col-calc {
+      background: var(--color-bg-page);
+      color:      var(--color-text-secondary);
+    }
+
+    /* 期間内納品数列（薄いグレー背景） */
+    .input-table .col-delivered {
+      background: var(--color-bg-page);
+      color:      var(--color-text-secondary);
+    }
+
+    /* 期末在庫入力セル */
+    .input-table .col-input input {
+      width:         64px;
+      height:        32px;
+      text-align:    center;
+      padding:       0 var(--spacing-sm);
+      font-size:     var(--font-size-sm);
+      font-family:   var(--font-family);
+      color:         var(--color-text-primary);
+      background:    #FFFDF8;
+      border:        1.5px solid var(--color-accent);
+      border-radius: var(--radius-sm);
+      outline:       none;
+      transition:    border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-table .col-input input:focus {
+      border-color: var(--color-accent-hover);
+      box-shadow:   0 0 0 3px rgba(186, 117, 23, 0.12);
+    }
+
+    /* 売上点数（マイナスのとき赤） */
+    .text-danger { color: var(--color-danger-text); font-weight: 500; }
+    .text-accent { color: var(--color-accent);      font-weight: 500; }
+
+    /* 合計行 */
+    .input-table .total-row td {
+      background:  var(--color-bg-page);
+      font-weight: 500;
+      border-top:  1.5px solid var(--color-border);
+    }
+
+    /* ステータスバー */
+    .status-bar {
+      display:       flex;
+      align-items:   center;
+      gap:           var(--spacing-lg);
+      padding:       var(--spacing-md) var(--spacing-lg);
+      background:    var(--color-bg-page);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-md);
+      flex-wrap:     wrap;
+    }
+
+    .status-item {
+      display:     flex;
+      align-items: baseline;
+      gap:         var(--spacing-xs);
+    }
+
+    .status-label {
+      font-size: var(--font-size-sm);
+      color:     var(--color-text-secondary);
+    }
+
+    .status-value {
+      font-size:   18px;
+      font-weight: 500;
+      color:       var(--color-text-primary);
+    }
+
+    .status-unit {
+      font-size: var(--font-size-sm);
+      color:     var(--color-text-secondary);
+    }
+
+    /* 保存エリア */
+    .save-bar {
+      display:         flex;
+      justify-content: flex-end;
+      align-items:     center;
+      gap:             var(--spacing-md);
+      margin-top:      var(--spacing-lg);
+      padding-top:     var(--spacing-lg);
+      border-top:      0.5px solid var(--color-border);
+    }
+
+    .save-note {
+      font-size: var(--font-size-sm);
+      color:     var(--color-text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- サイドバー -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6l4-2 2 2a3 3 0 0 0 6 0l2-2 4 2-2 4h-2v8H7v-8H5L3 6z"/>
+        </svg>
+      </div>
+      <span class="sidebar-logo-text">委託販売<br>管理システム</span>
+    </div>
+
+    <span class="nav-section-label">メイン</span>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      ダッシュボード
+    </a>
+
+    <span class="nav-section-label">マスタ</span>
+    <a class="nav-item" href="client.html">
+      <svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      取引先
+    </a>
+    <a class="nav-item" href="product.html">
+      <svg viewBox="0 0 24 24"><path d="M3 6l4-2 2 2a3 3 0 0 0 6 0l2-2 4 2-2 4h-2v8H7v-8H5L3 6z"/></svg>
+      商品
+    </a>
+    <a class="nav-item" href="color.html">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3"/></svg>
+      色
+    </a>
+
+    <span class="nav-section-label">業務</span>
+    <a class="nav-item" href="delivery.html">
+      <svg viewBox="0 0 24 24"><path d="M5 8h14M5 12h14M5 16h6"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+      納品登録
+    </a>
+    <a class="nav-item" href="delivery-history.html">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      納品履歴
+    </a>
+    <a class="nav-item active" href="sales-report.html">
+      <svg viewBox="0 0 24 24"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4h12M10 4v4"/></svg>
+      売上報告入力
+    </a>
+    <a class="nav-item" href="sales-report-history.html">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      売上報告履歴
+    </a>
+
+    <span class="nav-section-label">設定</span>
+    <a class="nav-item" href="users.html">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      ユーザー管理
+    </a>
+
+    <div style="margin-top:auto; padding:var(--spacing-lg); border-top:0.5px solid var(--color-border);">
+      <div class="flex-center gap-sm">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--color-accent-light);display:flex;align-items:center;justify-content:center;font-size:var(--font-size-sm);font-weight:500;color:var(--color-accent);flex-shrink:0;">山</div>
+        <div>
+          <div style="font-size:var(--font-size-sm);font-weight:500;">山田 花子</div>
+          <a href="login.html" style="font-size:var(--font-size-xs);color:var(--color-text-muted);">ログアウト</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h1 class="page-title">売上報告入力</h1>
+      <p class="page-subtitle">FAXで受け取った期末在庫数を入力してください</p>
+    </div>
+
+    <!-- 取引先・年月選択 -->
+    <div class="card mb-lg">
+      <div class="search-bar">
+        <div class="form-group">
+          <label class="form-label" for="client">取引先</label>
+          <select class="form-select" id="client" style="min-width:200px;">
+            <option>大厳寺高原キャンプ場</option>
+            <option>越後湯沢道の駅</option>
+            <option>十日町観光センター</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="yearmonth">対象年月</label>
+          <input class="form-input" type="month" id="yearmonth" value="2026-05" style="width:160px;" />
+        </div>
+        <button class="btn btn-primary">表示する</button>
+      </div>
+    </div>
+
+    <!-- ステータスバー -->
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-label">取引先</span>
+        <span class="status-value" style="font-size:var(--font-size-base);">大厳寺高原キャンプ場</span>
+      </div>
+      <div style="width:1px;height:24px;background:var(--color-border);"></div>
+      <div class="status-item">
+        <span class="status-label">対象期間</span>
+        <span class="status-value" style="font-size:var(--font-size-base);">2026年5月</span>
+      </div>
+      <div style="width:1px;height:24px;background:var(--color-border);"></div>
+      <div class="status-item">
+        <span class="status-label">売上合計</span>
+        <span class="status-value">¥44,550</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">売上点数</span>
+        <span class="status-value">18</span>
+        <span class="status-unit">点</span>
+      </div>
+      <div class="status-item" style="margin-left:auto;">
+        <span class="badge badge-warning">入力中 32 / 41 件</span>
+      </div>
+    </div>
+
+    <!-- 入力テーブル -->
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="input-table">
+          <thead>
+            <tr>
+              <th rowspan="2" style="text-align:left; width:160px;">品名</th>
+              <th rowspan="2" style="width:70px;">色</th>
+              <th rowspan="2" style="width:70px;">上代</th>
+              <th rowspan="2" style="width:70px;">下代</th>
+              <th rowspan="2" style="width:60px;">期首<br>在庫</th>
+              <th colspan="4">期間内納品数</th>
+              <th rowspan="2" style="width:60px;">納品計</th>
+              <th rowspan="2" style="width:80px;">期末在庫<br><span style="font-weight:400;color:var(--color-accent);font-size:11px;">▼ FAX入力</span></th>
+              <th rowspan="2" style="width:60px;">売上<br>点数</th>
+              <th rowspan="2" style="width:80px;">売上額</th>
+            </tr>
+            <tr>
+              <th style="width:56px;">5/8</th>
+              <th style="width:56px;">5/15</th>
+              <th style="width:56px;">5/22</th>
+              <th style="width:56px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <tr>
+              <td class="col-name" rowspan="4">山菜図鑑Tシャツ</td>
+              <td>白</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="text-accent">2</td>
+              <td class="col-calc">¥4,950</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">2</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">4</td>
+              <td class="col-input"><input type="number" min="0" value="4" /></td>
+              <td>0</td>
+              <td class="col-calc">¥0</td>
+            </tr>
+            <tr>
+              <td>黒</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="3" /></td>
+              <td>0</td>
+              <td class="col-calc">¥0</td>
+            </tr>
+            <tr>
+              <td>インディゴ</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥2,475</td>
+            </tr>
+
+            <tr>
+              <td class="col-name">うどTシャツ</td>
+              <td>黒</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">0</td>
+              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-calc">—</td>
+              <td class="col-calc">—</td>
+            </tr>
+
+            <tr>
+              <td class="col-name" rowspan="3">こごめTシャツ</td>
+              <td>白</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">2</td>
+              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥2,475</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥2,475</td>
+            </tr>
+            <tr>
+              <td>黒</td>
+              <td class="col-calc">¥3,300</td>
+              <td class="col-calc">¥2,475</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">2</td>
+              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥2,475</td>
+            </tr>
+
+            <tr>
+              <td class="col-name" rowspan="2">山菜図鑑パーカー</td>
+              <td>黒</td>
+              <td class="col-calc">¥5,500</td>
+              <td class="col-calc">¥4,400</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">0</td>
+              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-calc">—</td>
+              <td class="col-calc">—</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">¥5,500</td>
+              <td class="col-calc">¥4,400</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">0</td>
+              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-calc">—</td>
+              <td class="col-calc">—</td>
+            </tr>
+
+            <tr>
+              <td class="col-name">山菜図鑑 トートバッグ</td>
+              <td>—</td>
+              <td class="col-calc">¥1,700</td>
+              <td class="col-calc">¥1,275</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">2</td>
+              <td class="col-delivered">2</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">5</td>
+              <td class="col-input"><input type="number" min="0" value="3" /></td>
+              <td class="text-accent">2</td>
+              <td class="col-calc">¥2,550</td>
+            </tr>
+            <tr>
+              <td class="col-name">山菜図鑑 トートバッグ ネイビー</td>
+              <td>—</td>
+              <td class="col-calc">¥1,700</td>
+              <td class="col-calc">¥1,275</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">2</td>
+              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td>0</td>
+              <td class="col-calc">¥0</td>
+            </tr>
+            <tr>
+              <td class="col-name">山菜図鑑 トートバッグ グリーン</td>
+              <td>—</td>
+              <td class="col-calc">¥1,700</td>
+              <td class="col-calc">¥1,275</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">2</td>
+              <td class="col-input"><input type="number" min="0" value="0" /></td>
+              <td class="text-accent">2</td>
+              <td class="col-calc">¥2,550</td>
+            </tr>
+            <tr>
+              <td class="col-name">こごめ トートバッグ ミニ</td>
+              <td>—</td>
+              <td class="col-calc">¥1,500</td>
+              <td class="col-calc">¥1,125</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥1,125</td>
+            </tr>
+
+            <tr>
+              <td class="col-name">山菜図鑑 手ぬぐい</td>
+              <td>—</td>
+              <td class="col-calc">¥1,500</td>
+              <td class="col-calc">¥1,125</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">2</td>
+              <td class="col-delivered">2</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">5</td>
+              <td class="col-input"><input type="number" min="0" value="0" /></td>
+              <td class="text-accent">5</td>
+              <td class="col-calc">¥5,625</td>
+            </tr>
+            <tr>
+              <td class="col-name">こごめ 手ぬぐい</td>
+              <td>—</td>
+              <td class="col-calc">¥1,500</td>
+              <td class="col-calc">¥1,125</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="text-accent">1</td>
+              <td class="col-calc">¥1,125</td>
+            </tr>
+            <tr>
+              <td class="col-name">みょうが 手ぬぐい</td>
+              <td>—</td>
+              <td class="col-calc">¥1,500</td>
+              <td class="col-calc">¥1,125</td>
+              <td class="col-calc">0</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered">1</td>
+              <td class="col-delivered"></td>
+              <td class="col-calc">3</td>
+              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-calc">—</td>
+              <td class="col-calc">—</td>
+            </tr>
+
+            <!-- 合計行 -->
+            <tr class="total-row">
+              <td colspan="5" style="text-align:right; font-weight:500;">合計</td>
+              <td class="col-delivered" colspan="4"></td>
+              <td>59</td>
+              <td>—</td>
+              <td class="text-accent">18</td>
+              <td style="font-weight:500;">¥44,550</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 保存エリア -->
+      <div class="save-bar">
+        <span class="save-note">※保存すると期末在庫数が確定し、委託販売納品書（Excel）が出力されます</span>
+        <button class="btn btn-secondary">クリア</button>
+        <button class="btn btn-primary">保存する</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

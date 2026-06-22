@@ -1,0 +1,118 @@
+@model Zaiko.ViewModels.DeliveryHistoryViewModel
+@{
+    ViewData["Title"] = "納品履歴";
+}
+
+@section Styles {
+<style>
+.search-bar { display:flex; align-items:flex-end; gap:var(--spacing-md); flex-wrap:wrap; }
+.search-bar .form-group { margin-bottom:0; }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); color:var(--color-accent); background:none; border:none; padding:0; cursor:pointer; font-family:inherit; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link:last-child { margin-right:0; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">納品履歴</h1>
+  <p class="page-subtitle">登録済みの納品記録を確認・編集・削除します</p>
+</div>
+
+<!-- 検索条件 -->
+<div class="card" style="margin-bottom:var(--spacing-lg)">
+  <form method="get" action="@Url.Action("Index")" class="search-bar">
+    <div class="form-group">
+      <label class="form-label">取引先</label>
+      <select name="clientId" class="form-select" style="width:200px">
+        <option value="">すべて</option>
+        @foreach (var item in Model.Clients)
+        {
+          @if (item.Value == Model.ClientId?.ToString())
+          {
+            <option value="@item.Value" selected>@item.Text</option>
+          }
+          else
+          {
+            <option value="@item.Value">@item.Text</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象年月</label>
+      <input type="month" name="yearMonth" class="form-input" style="width:160px"
+             value="@Model.YearMonth" />
+    </div>
+    <button type="submit" class="btn btn-secondary">絞り込む</button>
+  </form>
+</div>
+
+<!-- 一覧 -->
+@if (!Model.HasSearch)
+{
+  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
+    条件を選択して「絞り込む」をクリックしてください
+  </div>
+}
+else
+{
+  <div class="card">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>納品日</th>
+            <th>取引先</th>
+            <th style="text-align:right">品目数</th>
+            <th style="text-align:right">合計数量</th>
+            <th>種別</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!Model.Rows.Any())
+          {
+            <tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">該当する納品記録がありません</td></tr>
+          }
+          @foreach (var row in Model.Rows)
+          {
+            string dateStr = row.DeliveredAt.ToString("yyyy-MM-dd");
+            <tr>
+              <td>@row.DeliveredAt.ToString("yyyy年M月d日")</td>
+              <td>@row.ClientName</td>
+              <td style="text-align:right">@row.ProductCount</td>
+              <td style="text-align:right">@row.TotalQuantity</td>
+              <td>
+                @if (row.IsCarryOver)
+                {
+                  <span class="badge badge-info">繰越</span>
+                }
+                else
+                {
+                  <span class="badge badge-success">通常</span>
+                }
+              </td>
+              <td>
+                @if (!row.IsCarryOver)
+                {
+                  <a href="@Url.Action("Index", "Delivery", new { clientId = row.ClientId, date = dateStr })"
+                     class="action-link">編集</a>
+                }
+                <form method="post" action="@Url.Action("Delete")" style="display:inline;"
+                      onsubmit="return confirm('@(row.DeliveredAt.ToString("yyyy年M月d日"))の納品記録（@row.ClientName）を削除します。\nよろしいですか？')">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="clientId" value="@row.ClientId" />
+                  <input type="hidden" name="deliveredAt" value="@dateStr" />
+                  <input type="hidden" name="isCarryOver" value="@row.IsCarryOver.ToString().ToLower()" />
+                  <input type="hidden" name="returnYearMonth" value="@Model.YearMonth" />
+                  <button type="submit" class="action-link danger">削除</button>
+                </form>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

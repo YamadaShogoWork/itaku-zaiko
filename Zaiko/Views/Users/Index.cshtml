@@ -1,0 +1,69 @@
+@model List<Zaiko.ViewModels.UserListItemViewModel>
+@{
+    ViewData["Title"] = "ユーザー管理";
+}
+
+@section Styles {
+<style>
+.list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); color:var(--color-accent); background:none; border:none; padding:0; cursor:pointer; font-family:inherit; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link.disabled { color:var(--color-text-muted); cursor:not-allowed; pointer-events:none; }
+.action-link:last-child { margin-right:0; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">ユーザー管理</h1>
+  <p class="page-subtitle">システムへのログインユーザーを管理します</p>
+</div>
+
+<div class="list-header">
+  <span class="text-muted text-sm">全@(Model.Count)人</span>
+  <a href="@Url.Action("Edit")" class="btn btn-primary">+ 新規登録</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ユーザー名</th>
+          <th>登録日</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var u in Model)
+        {
+          <tr>
+            <td>
+              @u.UserName
+              @if (u.IsSelf)
+              {
+                <span class="badge badge-info" style="margin-left:var(--spacing-sm);">ログイン中</span>
+              }
+            </td>
+            <td>@u.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</td>
+            <td>
+              <a href="@Url.Action("Edit", new { id = u.Id })" class="action-link">パスワード変更</a>
+              @if (u.CanDelete)
+              {
+                <form method="post" action="@Url.Action("Delete", new { id = u.Id })" style="display:inline;"
+                      onsubmit="return confirm('ユーザー「@u.UserName」を削除します。\nよろしいですか？')">
+                  @Html.AntiForgeryToken()
+                  <button type="submit" class="action-link danger">削除</button>
+                </form>
+              }
+              else
+              {
+                <span class="action-link disabled">削除</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,62 @@
+@page
+@model Zaiko.Areas.Identity.Pages.Account.LoginModel
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "ログイン";
+}
+
+@section Styles {
+<style>
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.app-layout { display:contents; }
+.sidebar { display:none; }
+.main-content { display:flex; align-items:center; justify-content:center; min-height:100vh; width:100%; padding:0; }
+.login-card { width:100%; max-width:380px; padding:var(--spacing-xl) calc(var(--spacing-xl) + 8px); }
+.login-header { text-align:center; margin-bottom:var(--spacing-xl); }
+.login-logo { width:48px; height:48px; background:var(--color-accent-light); border-radius:var(--radius-md); display:inline-flex; align-items:center; justify-content:center; margin-bottom:var(--spacing-md); }
+.login-logo svg { width:24px; height:24px; fill:none; stroke:var(--color-accent); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.login-title { font-size:var(--font-size-lg); font-weight:500; margin-bottom:var(--spacing-xs); }
+.login-form .form-group { margin-bottom:var(--spacing-md); }
+</style>
+}
+
+<div class="card login-card">
+
+  <div class="login-header">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 6l4-2 2 2a3 3 0 0 0 6 0l2-2 4 2-2 4h-2v8H7v-8H5L3 6z"/>
+      </svg>
+    </div>
+    <p class="login-title">委託販売管理システム</p>
+    <p style="font-size:var(--font-size-sm);color:var(--color-text-muted);">サンタ・クリエイト</p>
+  </div>
+
+  @if (!ViewData.ModelState.IsValid)
+  {
+    <div style="background:var(--color-danger-bg);color:var(--color-danger-text);padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-sm);margin-bottom:var(--spacing-md);font-size:var(--font-size-sm);">
+      @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+      {
+        <div>@error.ErrorMessage</div>
+      }
+    </div>
+  }
+
+  <form class="login-form" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    <div class="form-group">
+      <label class="form-label" asp-for="Input.UserName">ユーザー名</label>
+      <input class="form-input" asp-for="Input.UserName" autocomplete="username" placeholder="username" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" asp-for="Input.Password">パスワード</label>
+      <input class="form-input" asp-for="Input.Password" autocomplete="current-password" placeholder="••••••••" />
+    </div>
+
+    <button class="btn btn-primary btn-block mt-sm" type="submit" style="width:100%;margin-top:var(--spacing-md);">ログイン</button>
+  </form>
+
+</div>

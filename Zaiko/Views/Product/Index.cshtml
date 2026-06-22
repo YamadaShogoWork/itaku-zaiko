@@ -1,0 +1,89 @@
+@model List<Zaiko.ViewModels.ProductGroupViewModel>
+@{
+    ViewData["Title"] = "商品管理";
+}
+
+@section Styles {
+<style>
+.list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-lg); }
+.product-name-cell { vertical-align:middle; font-weight:500; }
+.action-link { font-size:var(--font-size-sm); margin-right:var(--spacing-md); color:var(--color-accent); background:none; border:none; padding:0; cursor:pointer; font-family:inherit; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:var(--color-danger-text); }
+.action-link.disabled { color:var(--color-text-muted); cursor:not-allowed; }
+.action-link:last-child { margin-right:0; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">商品管理</h1>
+  <p class="page-subtitle">商品（品名・色・上代・掛け率）の登録・編集・削除を行います</p>
+</div>
+
+<div class="list-header">
+  <span class="text-muted text-sm">全@(Model.Sum(g => g.Colors.Count))件（@(Model.Count)品目）</span>
+  <a href="@Url.Action("Edit")" class="btn btn-primary">+ 新規登録</a>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>品名</th>
+          <th>色</th>
+          <th style="text-align:right">上代（円）</th>
+          <th style="text-align:right">掛け率</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Any())
+        {
+          <tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">商品が登録されていません</td></tr>
+        }
+        @foreach (var grp in Model)
+        {
+          int rowspan = grp.Colors.Count;
+          @for (int gi = 0; gi < grp.Colors.Count; gi++)
+          {
+            var row = grp.Colors[gi];
+            bool isFirst = gi == 0;
+            <tr>
+              @if (isFirst)
+              {
+                <td rowspan="@rowspan" class="product-name-cell">
+                  @grp.ProductName
+                  <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:2px;">
+                    上代: @grp.RetailPrice.ToString("N0")円 / 掛率: @grp.CommissionRate.ToString("0.###")
+                  </div>
+                </td>
+              }
+              <td>@(row.ColorName ?? "—")</td>
+              <td style="text-align:right">@grp.RetailPrice.ToString("N0")</td>
+              <td style="text-align:right">@grp.CommissionRate.ToString("0.###")</td>
+              <td>
+                @if (isFirst)
+                {
+                  <a href="@Url.Action("Edit", new { productName = grp.ProductName })" class="action-link">編集</a>
+                }
+                @if (!row.HasRelatedData)
+                {
+                  <form method="post" action="@Url.Action("Delete", new { id = row.ProductId })" style="display:inline;"
+                        onsubmit="return confirm('商品「@grp.ProductName@(row.ColorName != null ? " " + row.ColorName : "")」を削除します。\nよろしいですか？')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="action-link danger">削除</button>
+                  </form>
+                }
+                else
+                {
+                  <span class="action-link disabled" title="使用中の商品は削除できません">削除</span>
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

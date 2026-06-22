@@ -1,0 +1,290 @@
+@model Zaiko.ViewModels.SalesReportInputViewModel
+@{
+    ViewData["Title"] = "売上報告入力";
+    var dates = Model.DeliveryDates;
+    int totalRows = Model.Groups.Sum(g => g.Rows.Count);
+}
+
+@section Styles {
+<style>
+.search-bar { display:flex; align-items:flex-end; gap:var(--spacing-md); flex-wrap:wrap; }
+.search-bar .form-group { margin-bottom:0; }
+.status-bar { display:flex; gap:var(--spacing-xl); flex-wrap:wrap; align-items:center; margin:var(--spacing-md) 0; padding:var(--spacing-sm) var(--spacing-md); background:var(--color-accent-light); border-radius:var(--radius-sm); font-size:var(--font-size-sm); }
+.readonly-banner { background:var(--color-warning-bg); color:var(--color-warning-text); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); }
+.product-name-cell { vertical-align:middle; font-weight:500; }
+.closing-input { width:72px; height:32px; text-align:right; }
+.closing-input:disabled { background:var(--color-bg-page); color:var(--color-text-muted); }
+.required-cell input { border-color:var(--color-accent); }
+.total-row td { font-weight:500; background:var(--color-bg-page); }
+.table-actions { display:flex; gap:var(--spacing-md); justify-content:flex-end; margin-top:var(--spacing-md); }
+td.num { text-align:right; }
+</style>
+}
+
+<div class="page-header">
+  <h1 class="page-title">売上報告入力</h1>
+  <p class="page-subtitle">FAXで受け取った期末在庫数を入力して保存・帳票出力します</p>
+</div>
+
+<!-- 検索条件 -->
+<div class="card" style="margin-bottom:var(--spacing-lg)">
+  <form method="get" action="@Url.Action("Index")" class="search-bar">
+    <div class="form-group">
+      <label class="form-label">取引先</label>
+      <select name="clientId" class="form-select" style="width:200px">
+        <option value="">選択してください</option>
+        @foreach (var item in Model.Clients)
+        {
+          @if (item.Value == Model.ClientId?.ToString())
+          {
+            <option value="@item.Value" selected>@item.Text</option>
+          }
+          else
+          {
+            <option value="@item.Value">@item.Text</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象年月</label>
+      <input type="month" name="yearMonth" class="form-input" style="width:160px"
+             value="@Model.YearMonth" />
+    </div>
+    <button type="submit" class="btn btn-secondary">表示する</button>
+  </form>
+</div>
+
+@if (Model.HasTable)
+{
+  var ymParts = Model.YearMonth?.Split('-');
+  string ymLabel = ymParts?.Length == 2 ? $"{ymParts[0]}年{int.Parse(ymParts[1])}月" : Model.YearMonth ?? "";
+
+  <div class="status-bar">
+    <span>取引先: <strong>@Model.ClientName</strong></span>
+    <span>対象期間: <strong>@ymLabel</strong></span>
+    <span>売上合計: <strong id="status-sales-amount">—</strong>円</span>
+    <span>売上点数: <strong id="status-sales-qty">—</strong>点</span>
+  </div>
+
+  @if (Model.IsReadOnly)
+  {
+    var nextYmParts = Model.YearMonth?.Split('-');
+    string nextYmLabel = "";
+    if (nextYmParts?.Length == 2)
+    {
+      int y = int.Parse(nextYmParts[0]), m = int.Parse(nextYmParts[1]) + 1;
+      if (m > 12) { m = 1; y++; }
+      nextYmLabel = $"{y}年{m}月";
+    }
+    <div class="readonly-banner">
+      翌月（@nextYmLabel）の売上報告が登録済みのため、この月の売上報告は編集できません。
+      修正する場合は<a href="@Url.Action("Index", "SalesReportHistory")">売上報告履歴</a>から翌月以降の売上報告を先に削除してください。
+    </div>
+  }
+
+  <form method="post" action="@Url.Action("Save")" id="sr-form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+    <input type="hidden" name="YearMonth" value="@Model.YearMonth" />
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th rowspan="2">品名</th>
+              <th rowspan="2">色</th>
+              <th rowspan="2" class="num">上代</th>
+              <th rowspan="2" class="num">下代</th>
+              <th rowspan="2" class="num">期首在庫</th>
+              @if (dates.Count > 0)
+              {
+                <th colspan="@dates.Count" style="text-align:center">期間内納品数</th>
+              }
+              else
+              {
+                <th style="text-align:center">期間内納品数</th>
+              }
+              <th rowspan="2" class="num">納品計</th>
+              <th rowspan="2" class="num">期末在庫</th>
+              <th rowspan="2" class="num">売上点数</th>
+              <th rowspan="2" class="num">売上額</th>
+            </tr>
+            <tr>
+              @if (dates.Count > 0)
+              {
+                @foreach (var d in dates)
+                {
+                  <th class="num">@d.Month/@d.Day</th>
+                }
+              }
+              else
+              {
+                <th class="num">—</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @{
+              int ri = 0;
+              int totalDelivery = 0;
+            }
+            @foreach (var grp in Model.Groups)
+            {
+              int rowspan = grp.Rows.Count;
+              @foreach (var row in grp.Rows)
+              {
+                bool isFirst = row == grp.Rows.First();
+                decimal wholesale = row.RetailPrice * row.CommissionRate;
+                int salesQty = row.ClosingStock.HasValue
+                    ? row.CarryOverQuantity + row.DeliveryTotal - row.ClosingStock.Value
+                    : 0;
+                decimal salesAmount = salesQty * wholesale;
+                totalDelivery += row.DeliveryTotal;
+
+                <tr class="sr-row"
+                    data-wholesale="@wholesale.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                    data-carryover="@row.CarryOverQuantity"
+                    data-delivery-total="@row.DeliveryTotal">
+                  @if (isFirst)
+                  {
+                    <td rowspan="@rowspan" class="product-name-cell">@grp.ProductName</td>
+                  }
+                  <td>@(row.ColorName ?? "—")</td>
+                  <td class="num">@row.RetailPrice.ToString("N0")</td>
+                  <td class="num">@wholesale.ToString("N2")</td>
+                  <td class="num">@row.CarryOverQuantity</td>
+                  @if (dates.Count > 0)
+                  {
+                    @foreach (var d in dates)
+                    {
+                      <td class="num">
+                        @(row.DeliveryByDate.TryGetValue(d, out var qty) ? qty.ToString() : "")
+                      </td>
+                    }
+                  }
+                  else
+                  {
+                    <td class="num">—</td>
+                  }
+                  <td class="num">@row.DeliveryTotal</td>
+                  <td class="@(row.ClosingStockRequired ? "required-cell" : "")">
+                    <input type="hidden" name="Items[@row.RowIndex].ProductId" value="@row.ProductId" />
+                    <input type="number" name="Items[@row.RowIndex].ClosingStock"
+                           class="form-input closing-input sr-closing"
+                           min="0" value="@row.ClosingStock"
+                           placeholder="—"
+                           @(Model.IsReadOnly ? "disabled" : "")
+                           @(row.ClosingStockRequired ? "data-required=true" : "") />
+                  </td>
+                  <td class="num sales-qty">@(row.ClosingStock.HasValue ? salesQty.ToString() : "—")</td>
+                  <td class="num sales-amount">@(row.ClosingStock.HasValue ? salesAmount.ToString("N2") : "—")</td>
+                </tr>
+                ri++;
+              }
+            }
+            <tr class="total-row">
+              <td colspan="@(5 + Math.Max(dates.Count, 1))">合計</td>
+              <td class="num" id="total-delivery">@totalDelivery</td>
+              <td class="num">—</td>
+              <td class="num" id="total-sales-qty">—</td>
+              <td class="num" id="total-sales-amount">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (!Model.IsReadOnly)
+    {
+      <div class="table-actions">
+        <button type="button" class="btn btn-secondary"
+                onclick="if(confirm('入力中の期末在庫をすべてクリアしますか？')) clearAll()">クリア</button>
+        <button type="button" class="btn btn-primary" onclick="submitSave()">保存する</button>
+      </div>
+    }
+  </form>
+}
+else
+{
+  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
+    取引先と対象年月を選択して「表示する」をクリックしてください
+  </div>
+}
+
+@section Scripts {
+<script>
+function recalcAll() {
+    var totalQty = 0, totalAmount = 0;
+    document.querySelectorAll('.sr-row').forEach(function(tr) {
+        var wholesale = parseFloat(tr.dataset.wholesale) || 0;
+        var carryOver = parseInt(tr.dataset.carryover) || 0;
+        var delivTotal = parseInt(tr.dataset.deliveryTotal) || 0;
+        var inp = tr.querySelector('.sr-closing');
+        var qtyEl = tr.querySelector('.sales-qty');
+        var amtEl = tr.querySelector('.sales-amount');
+        if (!inp || !qtyEl || !amtEl) return;
+        var raw = inp.value;
+        if (raw === '' || raw === null) {
+            qtyEl.textContent = '—';
+            amtEl.textContent = '—';
+        } else {
+            var closing = parseInt(raw) || 0;
+            var qty = carryOver + delivTotal - closing;
+            var amt = qty * wholesale;
+            qtyEl.textContent = qty;
+            amtEl.textContent = amt.toLocaleString('ja-JP', { minimumFractionDigits:2, maximumFractionDigits:2 });
+            totalQty += qty;
+            totalAmount += amt;
+        }
+    });
+    var tqEl = document.getElementById('total-sales-qty');
+    var taEl = document.getElementById('total-sales-amount');
+    if (tqEl) tqEl.textContent = totalQty;
+    if (taEl) taEl.textContent = totalAmount.toLocaleString('ja-JP', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    var ssqEl = document.getElementById('status-sales-qty');
+    var ssaEl = document.getElementById('status-sales-amount');
+    if (ssqEl) ssqEl.textContent = totalQty;
+    if (ssaEl) ssaEl.textContent = totalAmount.toLocaleString('ja-JP', { minimumFractionDigits:0, maximumFractionDigits:0 });
+}
+
+document.querySelectorAll('.sr-closing').forEach(function(inp) {
+    inp.addEventListener('blur', recalcAll);
+    inp.addEventListener('input', recalcAll);
+});
+recalcAll();
+
+function clearAll() {
+    document.querySelectorAll('.sr-closing:not(:disabled)').forEach(function(inp) { inp.value = ''; });
+    recalcAll();
+}
+
+function submitSave() {
+    var required = document.querySelectorAll('.sr-closing[data-required=true]');
+    var missing = false;
+    required.forEach(function(inp) { if (!inp.value && inp.value !== '0') missing = true; });
+    if (missing) {
+        alert('期首在庫が存在する商品の期末在庫は必須です。');
+        return;
+    }
+    if (confirm('売上報告を保存してExcelを出力します。よろしいですか？')) {
+        document.getElementById('sr-form').submit();
+    }
+}
+
+@if (ViewData["DownloadClientId"] != null && ViewData["DownloadYearMonth"] != null)
+{
+    <text>
+setTimeout(function() {
+    var a = document.createElement('a');
+    a.href = '@Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], yearMonth = ViewData["DownloadYearMonth"] })';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}, 300);
+    </text>
+}
+</script>
+}

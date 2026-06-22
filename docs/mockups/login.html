@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログイン — 委託販売管理システム</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    /* =============================
+       ログイン画面 固有スタイル
+       ============================= */
+    body {
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      min-height:      100vh;
+    }
+
+    .login-card {
+      width:     100%;
+      max-width: 380px;
+      padding:   var(--spacing-xl) calc(var(--spacing-xl) + 8px);
+    }
+
+    .login-header {
+      text-align:    center;
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .login-logo {
+      width:           48px;
+      height:          48px;
+      background:      var(--color-accent-light);
+      border-radius:   var(--radius-md);
+      display:         inline-flex;
+      align-items:     center;
+      justify-content: center;
+      margin-bottom:   var(--spacing-md);
+    }
+
+    .login-logo svg {
+      width:          24px;
+      height:         24px;
+      fill:           none;
+      stroke:         var(--color-accent);
+      stroke-width:   1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .login-title {
+      font-size:     var(--font-size-lg);
+      font-weight:   500;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .login-form .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card login-card">
+
+    <div class="login-header">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6l4-2 2 2a3 3 0 0 0 6 0l2-2 4 2-2 4h-2v8H7v-8H5L3 6z"/>
+        </svg>
+      </div>
+      <p class="login-title">委託販売管理システム</p>
+      <p class="text-sm text-muted">サンタ・クリエイト</p>
+    </div>
+
+    <form class="login-form" action="dashboard.html" method="get">
+      <div class="form-group">
+        <label class="form-label" for="username">ユーザー名</label>
+        <input class="form-input" type="text" id="username" name="username" placeholder="username" autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">パスワード</label>
+        <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button class="btn btn-primary btn-block mt-sm" type="submit">ログイン</button>
+    </form>
+
+  </div>
+
+</body>
+</html>
