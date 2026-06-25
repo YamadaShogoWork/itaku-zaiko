@@ -35,7 +35,15 @@ public class ColorController(ApplicationDbContext db) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        db.Colors.Add(new Color { ColorName = colorName.Trim() });
+        var trimmed = colorName.Trim();
+        bool exists = await db.Colors.AnyAsync(c => c.ColorName == trimmed);
+        if (exists)
+        {
+            TempData["Error"] = $"色名「{trimmed}」は既に登録されています。";
+            return RedirectToAction(nameof(Index));
+        }
+
+        db.Colors.Add(new Color { ColorName = trimmed });
         await db.SaveChangesAsync();
         TempData["Success"] = "色を追加しました。";
         return RedirectToAction(nameof(Index));
@@ -54,7 +62,15 @@ public class ColorController(ApplicationDbContext db) : Controller
         var color = await db.Colors.FindAsync(id);
         if (color == null) return NotFound();
 
-        color.ColorName = colorName.Trim();
+        var trimmed = colorName.Trim();
+        bool exists = await db.Colors.AnyAsync(c => c.ColorName == trimmed && c.ColorId != id);
+        if (exists)
+        {
+            TempData["Error"] = $"色名「{trimmed}」は既に登録されています。";
+            return RedirectToAction(nameof(Index));
+        }
+
+        color.ColorName = trimmed;
         await db.SaveChangesAsync();
         TempData["Success"] = "色名を更新しました。";
         return RedirectToAction(nameof(Index));

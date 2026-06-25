@@ -276,14 +276,14 @@ function submitSave() {
 @if (ViewData["DownloadClientId"] != null && ViewData["DownloadYearMonth"] != null)
 {
     <text>
-setTimeout(function() {
-    var a = document.createElement('a');
-    a.href = '@Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], yearMonth = ViewData["DownloadYearMonth"] })';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}, 300);
+(function() {
+    var url = new URL(window.location.href);
+    url.searchParams.delete('download');
+    window.history.replaceState({}, '', url.toString());
+    setTimeout(function() {
+        window.location.href = '@Html.Raw(Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], yearMonth = ViewData["DownloadYearMonth"] }))';
+    }, 300);
+})();
     </text>
 }
 </script>

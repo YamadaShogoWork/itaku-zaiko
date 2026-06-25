@@ -162,15 +162,14 @@ function submitSave() {
 @if (ViewData["DownloadClientId"] != null && ViewData["DownloadDate"] != null)
 {
     <text>
-// 保存後に自動でExcelをダウンロード
-setTimeout(function() {
-    var a = document.createElement('a');
-    a.href = '@Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], date = ViewData["DownloadDate"] })';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}, 300);
+(function() {
+    var url = new URL(window.location.href);
+    url.searchParams.delete('download');
+    window.history.replaceState({}, '', url.toString());
+    setTimeout(function() {
+        window.location.href = '@Html.Raw(Url.Action("DownloadExcel", new { clientId = ViewData["DownloadClientId"], date = ViewData["DownloadDate"] }))';
+    }, 300);
+})();
     </text>
 }
 </script>

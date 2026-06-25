@@ -6,16 +6,20 @@ namespace Zaiko.Services;
 
 public class SalesReportService(ApplicationDbContext db)
 {
-    public async Task<ExcelReportData> BuildExcelDataAsync(int clientId, string clientName, string yearMonth)
+    public async Task<ExcelReportData> BuildExcelDataAsync(int clientId, string clientName, string yearMonth, string? faxNumber = null)
     {
         var clientProducts = await db.ClientProducts
             .Where(cp => cp.ClientId == clientId)
             .Include(cp => cp.Product).ThenInclude(p => p.Color)
             .ToListAsync();
 
+        var parts = yearMonth.Split('-');
+        int srYear = int.Parse(parts[0]);
+        int srMonth = int.Parse(parts[1]);
+
         var deliveries = await db.Deliveries
             .Where(d => d.ClientId == clientId
-                        && d.DeliveredAt.ToString("yyyy-MM") == yearMonth)
+                        && d.DeliveredAt.Year == srYear && d.DeliveredAt.Month == srMonth)
             .ToListAsync();
 
         var salesReports = await db.SalesReports
@@ -58,6 +62,7 @@ public class SalesReportService(ApplicationDbContext db)
         return new ExcelReportData
         {
             ClientName = clientName,
+            FaxNumber = faxNumber,
             YearMonth = yearMonth,
             DeliveryDates = deliveryDates,
             Rows = rows,

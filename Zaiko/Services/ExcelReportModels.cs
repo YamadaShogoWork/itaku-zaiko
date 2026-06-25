@@ -3,6 +3,7 @@ namespace Zaiko.Services;
 public class ExcelReportData
 {
     public string ClientName { get; set; } = string.Empty;
+    public string? FaxNumber { get; set; }
     public string YearMonth { get; set; } = string.Empty;  // "YYYY-MM"
     public List<DateOnly> DeliveryDates { get; set; } = [];  // up to 4 (IsCarryOver=false)
     public List<ExcelReportRow> Rows { get; set; } = [];

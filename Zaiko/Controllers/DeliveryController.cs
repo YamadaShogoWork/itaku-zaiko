@@ -15,7 +15,7 @@ public class DeliveryController(
     StockCalculationService stockService,
     ExcelOutputService excelService) : Controller
 {
-    public async Task<IActionResult> Index(int? clientId, string? date)
+    public async Task<IActionResult> Index(int? clientId, string? date, string? download)
     {
         var clients = await db.Clients
             .Where(c => c.IsActive)
@@ -37,12 +37,10 @@ public class DeliveryController(
             vm.Groups = await BuildGroups(clientId.Value, date);
         }
 
-        // Check if we need to trigger auto-download
-        if (TempData["DownloadClientId"] is int dlClientId &&
-            TempData["DownloadDate"] is string dlDate)
+        if (download == "1" && clientId.HasValue && date != null)
         {
-            ViewData["DownloadClientId"] = dlClientId;
-            ViewData["DownloadDate"] = dlDate;
+            ViewData["DownloadClientId"] = clientId.Value;
+            ViewData["DownloadDate"] = date;
         }
 
         return View(vm);
@@ -60,11 +58,13 @@ public class DeliveryController(
         }
 
         var yearMonth = deliveryDate.ToString("yyyy-MM");
+        int ymYear = deliveryDate.Year;
+        int ymMonth = deliveryDate.Month;
 
         // 月4件制限チェック
         var existingDates = await db.Deliveries
             .Where(d => d.ClientId == vm.ClientId && !d.IsCarryOver
-                        && d.DeliveredAt.ToString("yyyy-MM") == yearMonth)
+                        && d.DeliveredAt.Year == ymYear && d.DeliveredAt.Month == ymMonth)
             .Select(d => d.DeliveredAt)
             .Distinct()
             .ToListAsync();
@@ -109,10 +109,8 @@ public class DeliveryController(
 
         await db.SaveChangesAsync();
         TempData["Success"] = "納品を保存しました。";
-        TempData["DownloadClientId"] = vm.ClientId;
-        TempData["DownloadDate"] = vm.DeliveryDate;
 
-        return RedirectToAction(nameof(Index), new { clientId = vm.ClientId, date = vm.DeliveryDate });
+        return RedirectToAction(nameof(Index), new { clientId = vm.ClientId, date = vm.DeliveryDate, download = "1" });
     }
 
     public async Task<IActionResult> DownloadExcel(int clientId, string date)
@@ -125,7 +123,7 @@ public class DeliveryController(
         if (client == null) return NotFound();
 
         var yearMonth = deliveryDate.ToString("yyyy-MM");
-        var data = await BuildExcelData(client.ClientName, yearMonth, isDeliveryReport: true);
+        var data = await BuildExcelData(client.ClientName, client.FaxNumber, yearMonth, isDeliveryReport: true);
 
         var bytes = excelService.GenerateReport(data);
         var fileName = excelService.BuildFileName(client.ClientName, yearMonth);
@@ -183,7 +181,7 @@ public class DeliveryController(
             .ToList();
     }
 
-    private async Task<ExcelReportData> BuildExcelData(string clientName, string yearMonth, bool isDeliveryReport)
+    private async Task<ExcelReportData> BuildExcelData(string clientName, string? faxNumber, string yearMonth, bool isDeliveryReport)
     {
         var client = await db.Clients.FirstOrDefaultAsync(c => c.ClientName == clientName);
         if (client == null) return new ExcelReportData { ClientName = clientName, YearMonth = yearMonth };
@@ -193,9 +191,13 @@ public class DeliveryController(
             .Include(cp => cp.Product).ThenInclude(p => p.Color)
             .ToListAsync();
 
+        var parts = yearMonth.Split('-');
+        int bdYear = int.Parse(parts[0]);
+        int bdMonth = int.Parse(parts[1]);
+
         var deliveries = await db.Deliveries
             .Where(d => d.ClientId == client.ClientId
-                        && d.DeliveredAt.ToString("yyyy-MM") == yearMonth)
+                        && d.DeliveredAt.Year == bdYear && d.DeliveredAt.Month == bdMonth)
             .ToListAsync();
 
         var deliveryDates = deliveries
@@ -233,6 +235,7 @@ public class DeliveryController(
         return new ExcelReportData
         {
             ClientName = clientName,
+            FaxNumber = faxNumber,
             YearMonth = yearMonth,
             DeliveryDates = deliveryDates,
             Rows = rows,

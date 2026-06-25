@@ -32,9 +32,11 @@ public class DeliveryHistoryController(ApplicationDbContext db) : Controller
             if (clientId.HasValue)
                 query = query.Where(d => d.ClientId == clientId.Value);
 
-            // filter by yearMonth: DeliveredAt "yyyy-MM" == targetYearMonth
-            // EF Core SQLite: use string comparison via format
-            query = query.Where(d => d.DeliveredAt.ToString("yyyy-MM") == targetYearMonth);
+            // filter by yearMonth using Year/Month properties (ToString not translatable in LINQ)
+            var dhParts = targetYearMonth.Split('-');
+            int dhYear = int.Parse(dhParts[0]);
+            int dhMonth = int.Parse(dhParts[1]);
+            query = query.Where(d => d.DeliveredAt.Year == dhYear && d.DeliveredAt.Month == dhMonth);
 
             var deliveries = await query
                 .OrderByDescending(d => d.DeliveredAt)

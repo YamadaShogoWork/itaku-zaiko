@@ -48,10 +48,14 @@ public class SalesReportHistoryController(
             var clientIds = salesReports.Select(sr => sr.ClientId).Distinct().ToList();
             var productIds = salesReports.Select(sr => sr.ProductId).Distinct().ToList();
 
+            var tmParts = targetYM.Split('-');
+            int tmYear = int.Parse(tmParts[0]);
+            int tmMonth = int.Parse(tmParts[1]);
+
             var deliveries = await db.Deliveries
                 .Where(d => clientIds.Contains(d.ClientId)
                             && productIds.Contains(d.ProductId)
-                            && d.DeliveredAt.ToString("yyyy-MM") == targetYM)
+                            && d.DeliveredAt.Year == tmYear && d.DeliveredAt.Month == tmMonth)
                 .ToListAsync();
 
             var clientProducts = await db.ClientProducts
@@ -139,7 +143,7 @@ public class SalesReportHistoryController(
         var client = await db.Clients.FindAsync(clientId);
         if (client == null) return NotFound();
 
-        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth);
+        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth, client.FaxNumber);
 
         var rows = data.Rows.Select(r =>
         {
@@ -174,7 +178,7 @@ public class SalesReportHistoryController(
         var client = await db.Clients.FindAsync(clientId);
         if (client == null) return NotFound();
 
-        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth);
+        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth, client.FaxNumber);
         var bytes = excelService.GenerateReport(data);
         var fileName = excelService.BuildFileName(client.ClientName, yearMonth);
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);

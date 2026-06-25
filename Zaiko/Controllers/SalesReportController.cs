@@ -15,7 +15,7 @@ public class SalesReportController(
     ExcelOutputService excelService,
     SalesReportService srService) : Controller
 {
-    public async Task<IActionResult> Index(int? clientId, string? yearMonth)
+    public async Task<IActionResult> Index(int? clientId, string? yearMonth, string? download)
     {
         var clients = await db.Clients
             .Where(c => c.IsActive)
@@ -51,12 +51,10 @@ public class SalesReportController(
             }
         }
 
-        // Auto-download trigger
-        if (TempData["DownloadSRClientId"] is int dlClientId &&
-            TempData["DownloadSRYearMonth"] is string dlYM)
+        if (download == "1" && clientId.HasValue && !string.IsNullOrEmpty(yearMonth))
         {
-            ViewData["DownloadClientId"] = dlClientId;
-            ViewData["DownloadYearMonth"] = dlYM;
+            ViewData["DownloadClientId"] = clientId.Value;
+            ViewData["DownloadYearMonth"] = yearMonth;
         }
 
         return View(vm);
@@ -77,9 +75,13 @@ public class SalesReportController(
         }
 
         // Load carryover quantities to validate required fields
+        var ymPartsV = vm.YearMonth.Split('-');
+        int vmYear = int.Parse(ymPartsV[0]);
+        int vmMonth = int.Parse(ymPartsV[1]);
+
         var carryOvers = await db.Deliveries
             .Where(d => d.ClientId == vm.ClientId && d.IsCarryOver
-                        && d.DeliveredAt.ToString("yyyy-MM") == vm.YearMonth)
+                        && d.DeliveredAt.Year == vmYear && d.DeliveredAt.Month == vmMonth)
             .ToDictionaryAsync(d => d.ProductId, d => d.Quantity);
 
         var missingProducts = vm.Items
@@ -126,9 +128,12 @@ public class SalesReportController(
 
         // Monthly carryover: delete existing next-month carryover, recreate
         var nextMonthFirstDay = GetFirstDayOfNextMonth(vm.YearMonth);
+        var nextYMParts = nextYM.Split('-');
+        int nextYear = int.Parse(nextYMParts[0]);
+        int nextMonth = int.Parse(nextYMParts[1]);
         var existingCarryOvers = await db.Deliveries
             .Where(d => d.ClientId == vm.ClientId && d.IsCarryOver
-                        && d.DeliveredAt.ToString("yyyy-MM") == nextYM)
+                        && d.DeliveredAt.Year == nextYear && d.DeliveredAt.Month == nextMonth)
             .ToListAsync();
         db.Deliveries.RemoveRange(existingCarryOvers);
 
@@ -147,10 +152,8 @@ public class SalesReportController(
         await db.SaveChangesAsync();
 
         TempData["Success"] = "売上報告を保存しました。";
-        TempData["DownloadSRClientId"] = vm.ClientId;
-        TempData["DownloadSRYearMonth"] = vm.YearMonth;
 
-        return RedirectToAction(nameof(Index), new { clientId = vm.ClientId, yearMonth = vm.YearMonth });
+        return RedirectToAction(nameof(Index), new { clientId = vm.ClientId, yearMonth = vm.YearMonth, download = "1" });
     }
 
     public async Task<IActionResult> DownloadExcel(int clientId, string yearMonth)
@@ -158,7 +161,7 @@ public class SalesReportController(
         var client = await db.Clients.FindAsync(clientId);
         if (client == null) return NotFound();
 
-        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth);
+        var data = await srService.BuildExcelDataAsync(clientId, client.ClientName, yearMonth, client.FaxNumber);
         var bytes = excelService.GenerateReport(data);
         var fileName = excelService.BuildFileName(client.ClientName, yearMonth);
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -175,9 +178,13 @@ public class SalesReportController(
             .Include(cp => cp.Product).ThenInclude(p => p.Color)
             .ToListAsync();
 
+        var ltParts = yearMonth.Split('-');
+        int ltYear = int.Parse(ltParts[0]);
+        int ltMonth = int.Parse(ltParts[1]);
+
         var deliveries = await db.Deliveries
             .Where(d => d.ClientId == clientId
-                        && d.DeliveredAt.ToString("yyyy-MM") == yearMonth)
+                        && d.DeliveredAt.Year == ltYear && d.DeliveredAt.Month == ltMonth)
             .ToListAsync();
 
         var existingSRs = await db.SalesReports
