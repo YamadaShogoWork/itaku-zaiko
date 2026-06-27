@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>取引先編集（並び替えモックアップ） — 委託販売管理システム</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .basic-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 var(--spacing-lg);
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+    .input-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      table-layout: fixed;
+    }
+    .input-table th {
+      background: var(--color-bg-page);
+      padding: var(--spacing-sm) var(--spacing-md);
+      text-align: center;
+      font-weight: 500;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      border: 0.5px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .input-table td {
+      padding: 6px var(--spacing-md);
+      border: 0.5px solid var(--color-border);
+      color: var(--color-text-primary);
+      text-align: center;
+      vertical-align: middle;
+    }
+    .input-table .col-name {
+      text-align: left;
+      font-weight: 500;
+    }
+    .input-table .col-calc {
+      background: var(--color-bg-page);
+      color: var(--color-text-secondary);
+    }
+    .rate-input {
+      width: 80px;
+      height: 32px;
+      text-align: center;
+      padding: 0 var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      font-family: var(--font-family);
+      color: var(--color-text-primary);
+      background: #FFFDF8;
+      border: 1.5px solid var(--color-accent);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+    .rate-input:disabled {
+      background: var(--color-bg-page);
+      border-color: var(--color-border-input);
+      color: var(--color-text-muted);
+    }
+    .product-group.row-disabled td:not(.col-checkbox-cell) {
+      color: var(--color-text-muted);
+    }
+
+    /* ドラッグハンドル */
+    .col-handle-cell {
+      width: 36px;
+      padding: 0 !important;
+    }
+    .drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 8px;
+      cursor: grab;
+      color: #C0C0C0;
+      user-select: none;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .drag-handle:hover { color: var(--color-accent); }
+    .drag-handle svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .row-disabled .drag-handle { visibility: hidden; cursor: default; }
+
+    /* SortableJS */
+    .sortable-ghost td { background: var(--color-accent-light) !important; opacity: 0.55; }
+    .sortable-chosen td { background: #FFF8EE !important; }
+
+    /* 区切り行 */
+    tbody.divider-row td {
+      background: var(--color-bg-page);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-xs);
+      padding: 4px var(--spacing-md);
+      border: 0.5px solid var(--color-border);
+      text-align: left;
+    }
+
+    .save-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-lg);
+      border-top: 0.5px solid var(--color-border);
+    }
+    .sort-hint {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      margin-bottom: var(--spacing-sm);
+    }
+    .sort-hint svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    #sort-preview {
+      margin-top: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--color-bg-page);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+    #sort-preview span { font-weight: 500; color: var(--color-text-primary); }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l4-2 2 2a3 3 0 0 0 6 0l2-2 4 2-2 4h-2v8H7v-8H5L3 6z"/></svg>
+      </div>
+      <span class="sidebar-logo-text">委託販売<br>管理システム</span>
+    </div>
+    <span class="nav-section-label">マスタ</span>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      取引先
+    </a>
+    <span class="nav-section-label">業務</span>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M5 8h14M5 12h14M5 16h6"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+      納品登録
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4h12M10 4v4"/></svg>
+      売上報告入力
+    </a>
+  </nav>
+
+  <main class="main-content">
+
+    <div class="page-header">
+      <h1 class="page-title">取引先編集</h1>
+      <p class="page-subtitle">取引先情報と取扱商品（掛け率）を編集します</p>
+    </div>
+
+    <div class="card mb-lg">
+      <div class="card-title">基本情報</div>
+      <div class="basic-form">
+        <div class="form-group">
+          <label class="form-label" for="client-name">取引先名</label>
+          <input class="form-input" type="text" id="client-name" value="大厳寺高原キャンプ場" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fax-number">FAX番号</label>
+          <input class="form-input" type="text" id="fax-number" value="025-123-4567" />
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="form-label" style="margin:0;">状態</span>
+        <span class="badge badge-success">有効</span>
+        <button class="btn btn-secondary" style="height:32px; padding:0 var(--spacing-md);">無効にする</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">取扱商品・掛け率</div>
+      <p class="text-muted text-sm mb-md">チェックを入れた商品がこの取引先の取扱商品として登録されます。掛け率は商品ごとの標準値が初期値として表示され、この取引先用に変更できます。</p>
+
+      <div class="sort-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        取扱商品は左端のアイコンをドラッグして並び替えできます。この順番で納品登録・売上報告・帳票に表示されます。
+      </div>
+
+      <div class="table-wrapper">
+        <table class="input-table" id="product-table">
+          <colgroup>
+            <col style="width:36px">
+            <col style="width:60px">
+            <col style="width:180px">
+            <col style="width:90px">
+            <col style="width:90px">
+            <col style="width:110px">
+            <col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th></th>
+              <th>取扱</th>
+              <th style="text-align:left;">品名</th>
+              <th>色</th>
+              <th>上代</th>
+              <th>掛け率</th>
+              <th>下代（参考）</th>
+            </tr>
+          </thead>
+
+          <!-- 取扱あり（ドラッグ可） -->
+
+          <tbody class="product-group checked" data-name="山菜図鑑Tシャツ">
+            <tr>
+              <td class="col-handle-cell" rowspan="4">
+                <div class="drag-handle" title="ドラッグして並び替え">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="9"  cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="19" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+                  </svg>
+                </div>
+              </td>
+              <td class="col-checkbox-cell" rowspan="4"><input type="checkbox" checked /></td>
+              <td class="col-name" rowspan="4">山菜図鑑Tシャツ</td>
+              <td>白</td>
+              <td class="col-calc">3,000</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">2,250</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">3,000</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">2,250</td>
+            </tr>
+            <tr>
+              <td>黒</td>
+              <td class="col-calc">3,000</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">2,250</td>
+            </tr>
+            <tr>
+              <td>インディゴ</td>
+              <td class="col-calc">3,000</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">2,250</td>
+            </tr>
+          </tbody>
+
+          <tbody class="product-group checked" data-name="山菜図鑑トートバッグ">
+            <tr>
+              <td class="col-handle-cell">
+                <div class="drag-handle" title="ドラッグして並び替え">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="9"  cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="19" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+                  </svg>
+                </div>
+              </td>
+              <td class="col-checkbox-cell"><input type="checkbox" checked /></td>
+              <td class="col-name">山菜図鑑トートバッグ</td>
+              <td>—</td>
+              <td class="col-calc">1,800</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">1,350</td>
+            </tr>
+          </tbody>
+
+          <tbody class="product-group checked" data-name="山菜図鑑手ぬぐい">
+            <tr>
+              <td class="col-handle-cell">
+                <div class="drag-handle" title="ドラッグして並び替え">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="9"  cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="5"  r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="9"  cy="19" r="1.5" fill="currentColor"/>
+                    <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+                  </svg>
+                </div>
+              </td>
+              <td class="col-checkbox-cell"><input type="checkbox" checked /></td>
+              <td class="col-name">山菜図鑑手ぬぐい</td>
+              <td>—</td>
+              <td class="col-calc">1,200</td>
+              <td><input class="rate-input" type="number" step="0.01" min="0" max="1" value="0.75"></td>
+              <td class="col-calc">900</td>
+            </tr>
+          </tbody>
+
+          <!-- 区切り -->
+          <tbody class="divider-row">
+            <tr><td colspan="7">— 取扱なし（チェックを入れると追加できます）—</td></tr>
+          </tbody>
+
+          <!-- 取扱なし（ドラッグ不可） -->
+
+          <tbody class="product-group row-disabled" data-name="うどTシャツ">
+            <tr>
+              <td class="col-handle-cell"><div class="drag-handle"></div></td>
+              <td class="col-checkbox-cell"><input type="checkbox" /></td>
+              <td class="col-name">うどTシャツ</td>
+              <td>黒</td>
+              <td class="col-calc">2,800</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.75" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+          </tbody>
+
+          <tbody class="product-group row-disabled" data-name="こごめTシャツ">
+            <tr>
+              <td class="col-handle-cell" rowspan="3"><div class="drag-handle"></div></td>
+              <td class="col-checkbox-cell" rowspan="3"><input type="checkbox" /></td>
+              <td class="col-name" rowspan="3">こごめTシャツ</td>
+              <td>白</td>
+              <td class="col-calc">2,800</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.75" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">2,800</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.75" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+            <tr>
+              <td>黒</td>
+              <td class="col-calc">2,800</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.75" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+          </tbody>
+
+          <tbody class="product-group row-disabled" data-name="山菜図鑑パーカー">
+            <tr>
+              <td class="col-handle-cell" rowspan="2"><div class="drag-handle"></div></td>
+              <td class="col-checkbox-cell" rowspan="2"><input type="checkbox" /></td>
+              <td class="col-name" rowspan="2">山菜図鑑パーカー</td>
+              <td>黒</td>
+              <td class="col-calc">5,500</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.8" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+            <tr>
+              <td>アッシュ</td>
+              <td class="col-calc">5,500</td>
+              <td><input class="rate-input" type="number" step="0.01" value="0.8" disabled></td>
+              <td class="col-calc">—</td>
+            </tr>
+          </tbody>
+
+        </table>
+      </div>
+
+      <div id="sort-preview"></div>
+
+      <div class="save-bar">
+        <a href="#" class="btn btn-secondary">キャンセル</a>
+        <button class="btn btn-primary">保存する</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+<script>
+  const table = document.getElementById('product-table');
+  const divider = table.querySelector('tbody.divider-row');
+
+  const HANDLE_SVG = `<svg viewBox="0 0 24 24" fill="none">
+    <circle cx="9"  cy="5"  r="1.5" fill="currentColor"/>
+    <circle cx="15" cy="5"  r="1.5" fill="currentColor"/>
+    <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="9"  cy="19" r="1.5" fill="currentColor"/>
+    <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+  </svg>`;
+
+  new Sortable(table, {
+    draggable: 'tbody.product-group.checked',
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onEnd: updatePreview
+  });
+
+  // チェックボックス変更時の処理
+  table.addEventListener('change', e => {
+    const checkbox = e.target;
+    if (checkbox.type !== 'checkbox') return;
+
+    const tbody = checkbox.closest('tbody.product-group');
+    if (!tbody) return;
+
+    const handle = tbody.querySelector('.drag-handle');
+    const rateInputs = tbody.querySelectorAll('.rate-input');
+
+    if (checkbox.checked) {
+      // 取扱なし → あり：divider の直前に移動、スタイル変更
+      tbody.classList.remove('row-disabled');
+      tbody.classList.add('checked');
+      handle.innerHTML = HANDLE_SVG;
+      handle.title = 'ドラッグして並び替え';
+      handle.style.cursor = 'grab';
+      rateInputs.forEach(inp => inp.disabled = false);
+      table.insertBefore(tbody, divider);
+    } else {
+      // 取扱あり → なし：テーブル末尾に移動、スタイル変更
+      tbody.classList.remove('checked');
+      tbody.classList.add('row-disabled');
+      handle.innerHTML = '';
+      handle.title = '';
+      handle.style.cursor = 'default';
+      rateInputs.forEach(inp => inp.disabled = true);
+      table.appendChild(tbody);
+    }
+
+    updatePreview();
+  });
+
+  function updatePreview() {
+    const names = [...table.querySelectorAll('tbody.product-group.checked')]
+      .map((tb, i) => `${i + 1}. ${tb.dataset.name}`);
+    const el = document.getElementById('sort-preview');
+    if (names.length === 0) {
+      el.innerHTML = '取扱商品がありません';
+      return;
+    }
+    el.innerHTML = '現在の並び順：' + names.map(n => `<span>${n}</span>`).join('&nbsp; / &nbsp;');
+  }
+
+  updatePreview();
+</script>
+
+</body>
+</html>

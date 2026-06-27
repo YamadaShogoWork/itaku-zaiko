@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダイアログ モックアップ — 委託販売管理システム</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body {
+      padding: var(--spacing-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xl);
+    }
+
+    h2 {
+      font-size: var(--font-size-lg);
+      font-weight: 500;
+      margin-bottom: var(--spacing-md);
+      color: var(--color-text-secondary);
+      border-bottom: 0.5px solid var(--color-border);
+      padding-bottom: var(--spacing-sm);
+    }
+
+    .pattern-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .trigger-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    /* =====================
+       オーバーレイ共通
+       ===================== */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      animation: overlay-in 0.15s ease;
+    }
+
+    .dialog-overlay.open {
+      display: flex;
+    }
+
+    @keyframes overlay-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* =====================
+       パターン A：コンパクト（アイコンなし）
+       ===================== */
+    .dialog-a {
+      background:    var(--color-bg-card);
+      border:        0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow:    0 8px 32px rgba(0, 0, 0, 0.18);
+      width:         400px;
+      max-width:     90vw;
+      padding:       var(--spacing-lg) var(--spacing-xl);
+      animation:     dialog-in 0.15s ease;
+    }
+
+    .dialog-a .dialog-title {
+      font-size:     var(--font-size-lg);
+      font-weight:   500;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .dialog-a .dialog-message {
+      font-size:  var(--font-size-base);
+      color:      var(--color-text-secondary);
+      margin-bottom: var(--spacing-lg);
+      line-height: 1.7;
+    }
+
+    .dialog-a .dialog-buttons {
+      display:         flex;
+      justify-content: flex-end;
+      gap:             var(--spacing-sm);
+    }
+
+    /* =====================
+       パターン B：アイコン付き（左上）
+       ===================== */
+    .dialog-b {
+      background:    var(--color-bg-card);
+      border:        0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow:    0 8px 32px rgba(0, 0, 0, 0.18);
+      width:         420px;
+      max-width:     90vw;
+      padding:       var(--spacing-lg) var(--spacing-xl);
+      animation:     dialog-in 0.15s ease;
+    }
+
+    .dialog-b .dialog-header {
+      display:       flex;
+      align-items:   flex-start;
+      gap:           var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .dialog-b .dialog-icon {
+      width:           40px;
+      height:          40px;
+      border-radius:   var(--radius-md);
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      flex-shrink:     0;
+    }
+
+    .dialog-b .dialog-icon svg {
+      width:  20px;
+      height: 20px;
+      fill:   none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dialog-b .dialog-icon.confirm {
+      background: var(--color-accent-light);
+    }
+    .dialog-b .dialog-icon.confirm svg { stroke: var(--color-accent); }
+
+    .dialog-b .dialog-icon.danger {
+      background: var(--color-danger-bg);
+    }
+    .dialog-b .dialog-icon.danger svg { stroke: var(--color-danger-text); }
+
+    .dialog-b .dialog-icon.warning {
+      background: var(--color-warning-bg);
+    }
+    .dialog-b .dialog-icon.warning svg { stroke: var(--color-warning-text); }
+
+    .dialog-b .dialog-icon.success {
+      background: var(--color-success-bg);
+    }
+    .dialog-b .dialog-icon.success svg { stroke: var(--color-success-text); }
+
+    .dialog-b .dialog-icon.info {
+      background: var(--color-info-bg);
+    }
+    .dialog-b .dialog-icon.info svg { stroke: var(--color-info-text); }
+
+    .dialog-b .dialog-title {
+      font-size:   var(--font-size-base);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .dialog-b .dialog-message {
+      font-size:  var(--font-size-sm);
+      color:      var(--color-text-secondary);
+      margin-top: var(--spacing-xs);
+      line-height: 1.7;
+    }
+
+    .dialog-b .dialog-buttons {
+      display:         flex;
+      justify-content: flex-end;
+      gap:             var(--spacing-sm);
+      margin-top:      var(--spacing-lg);
+    }
+
+    /* =====================
+       パターン C：センター大アイコン
+       ===================== */
+    .dialog-c {
+      background:    var(--color-bg-card);
+      border:        0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow:    0 8px 32px rgba(0, 0, 0, 0.18);
+      width:         360px;
+      max-width:     90vw;
+      padding:       var(--spacing-xl);
+      text-align:    center;
+      animation:     dialog-in 0.15s ease;
+    }
+
+    .dialog-c .dialog-icon-wrap {
+      width:           56px;
+      height:          56px;
+      border-radius:   50%;
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      margin:          0 auto var(--spacing-md);
+    }
+
+    .dialog-c .dialog-icon-wrap svg {
+      width:  26px;
+      height: 26px;
+      fill:   none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dialog-c .dialog-icon-wrap.confirm {
+      background: var(--color-accent-light);
+    }
+    .dialog-c .dialog-icon-wrap.confirm svg { stroke: var(--color-accent); }
+
+    .dialog-c .dialog-icon-wrap.danger {
+      background: var(--color-danger-bg);
+    }
+    .dialog-c .dialog-icon-wrap.danger svg { stroke: var(--color-danger-text); }
+
+    .dialog-c .dialog-icon-wrap.success {
+      background: var(--color-success-bg);
+    }
+    .dialog-c .dialog-icon-wrap.success svg { stroke: var(--color-success-text); }
+
+    .dialog-c .dialog-icon-wrap.warning {
+      background: var(--color-warning-bg);
+    }
+    .dialog-c .dialog-icon-wrap.warning svg { stroke: var(--color-warning-text); }
+
+    .dialog-c .dialog-icon-wrap.info {
+      background: var(--color-info-bg);
+    }
+    .dialog-c .dialog-icon-wrap.info svg { stroke: var(--color-info-text); }
+
+    .dialog-c .dialog-title {
+      font-size:     var(--font-size-lg);
+      font-weight:   500;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .dialog-c .dialog-message {
+      font-size:  var(--font-size-sm);
+      color:      var(--color-text-secondary);
+      margin-bottom: var(--spacing-lg);
+      line-height: 1.7;
+    }
+
+    .dialog-c .dialog-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .dialog-c .dialog-buttons .btn {
+      width: 100%;
+    }
+
+    /* アニメーション */
+    @keyframes dialog-in {
+      from { opacity: 0; transform: scale(0.96) translateY(4px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* 区切り線（削除確認用） */
+    .dialog-divider {
+      border: none;
+      border-top: 0.5px solid var(--color-border);
+      margin: var(--spacing-md) 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>ダイアログ パターン比較</h2>
+
+<!-- ========================================================
+     パターン A: コンパクト（アイコンなし）
+     シンプル・軽量。テキストだけで判断できる場合向け
+     ======================================================== -->
+<div>
+  <div class="pattern-label">パターン A — コンパクト（アイコンなし）</div>
+  <div class="trigger-row">
+    <button class="btn btn-secondary" onclick="openDialog('a-confirm')">確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('a-delete')">削除確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('a-ok')">完了（OK）</button>
+    <button class="btn btn-secondary" onclick="openDialog('a-error')">エラー（OK）</button>
+  </div>
+</div>
+
+<!-- ========================================================
+     パターン B: アイコン付き（左上）
+     操作の種類をひと目で判断できる。よく見るスタイル
+     ======================================================== -->
+<div>
+  <div class="pattern-label">パターン B — アイコン付き（左揃え）</div>
+  <div class="trigger-row">
+    <button class="btn btn-secondary" onclick="openDialog('b-confirm')">確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('b-delete')">削除確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('b-ok')">完了（OK）</button>
+    <button class="btn btn-secondary" onclick="openDialog('b-warning')">警告（OK）</button>
+    <button class="btn btn-secondary" onclick="openDialog('b-error')">エラー（OK）</button>
+  </div>
+</div>
+
+<!-- ========================================================
+     パターン C: センター大アイコン
+     視覚的インパクト大。完了/エラーなど状態表示向け
+     ======================================================== -->
+<div>
+  <div class="pattern-label">パターン C — センター大アイコン（縦積み）</div>
+  <div class="trigger-row">
+    <button class="btn btn-secondary" onclick="openDialog('c-confirm')">確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('c-delete')">削除確認（Yes/No）</button>
+    <button class="btn btn-secondary" onclick="openDialog('c-ok')">完了（OK）</button>
+    <button class="btn btn-secondary" onclick="openDialog('c-error')">エラー（OK）</button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     パターン A ダイアログ
+     ============================================================ -->
+
+<!-- A: 確認 -->
+<div class="dialog-overlay" id="a-confirm">
+  <div class="dialog-a">
+    <div class="dialog-title">保存しますか？</div>
+    <div class="dialog-message">入力した売上報告を保存し、月次繰越処理を実行します。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('a-confirm')">キャンセル</button>
+      <button class="btn btn-primary" onclick="closeDialog('a-confirm')">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- A: 削除確認 -->
+<div class="dialog-overlay" id="a-delete">
+  <div class="dialog-a">
+    <div class="dialog-title">削除しますか？</div>
+    <div class="dialog-message">「山田商店」を削除します。この操作は取り消せません。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('a-delete')">キャンセル</button>
+      <button class="btn btn-danger" onclick="closeDialog('a-delete')">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- A: 完了OK -->
+<div class="dialog-overlay" id="a-ok">
+  <div class="dialog-a">
+    <div class="dialog-title">保存しました</div>
+    <div class="dialog-message">売上報告を保存し、月次繰越処理が完了しました。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-primary" onclick="closeDialog('a-ok')">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- A: エラー -->
+<div class="dialog-overlay" id="a-error">
+  <div class="dialog-a">
+    <div class="dialog-title">エラーが発生しました</div>
+    <div class="dialog-message">保存中にエラーが発生しました。時間をおいて再度お試しください。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('a-error')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     パターン B ダイアログ
+     ============================================================ -->
+
+<!-- B: 確認 -->
+<div class="dialog-overlay" id="b-confirm">
+  <div class="dialog-b">
+    <div class="dialog-header">
+      <div class="dialog-icon confirm">
+        <!-- check-circle -->
+        <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      </div>
+      <div>
+        <div class="dialog-title">保存しますか？</div>
+        <div class="dialog-message">入力した売上報告を保存し、月次繰越処理を実行します。</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('b-confirm')">キャンセル</button>
+      <button class="btn btn-primary" onclick="closeDialog('b-confirm')">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- B: 削除確認 -->
+<div class="dialog-overlay" id="b-delete">
+  <div class="dialog-b">
+    <div class="dialog-header">
+      <div class="dialog-icon danger">
+        <!-- trash -->
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </div>
+      <div>
+        <div class="dialog-title">削除しますか？</div>
+        <div class="dialog-message">「山田商店」を削除します。この操作は取り消せません。</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('b-delete')">キャンセル</button>
+      <button class="btn btn-danger" onclick="closeDialog('b-delete')">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- B: 完了 -->
+<div class="dialog-overlay" id="b-ok">
+  <div class="dialog-b">
+    <div class="dialog-header">
+      <div class="dialog-icon success">
+        <!-- check -->
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div class="dialog-title">保存しました</div>
+        <div class="dialog-message">売上報告を保存し、月次繰越処理が完了しました。</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn btn-primary" onclick="closeDialog('b-ok')">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- B: 警告 -->
+<div class="dialog-overlay" id="b-warning">
+  <div class="dialog-b">
+    <div class="dialog-header">
+      <div class="dialog-icon warning">
+        <!-- alert-triangle -->
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="dialog-title">翌月の売上報告が登録されています</div>
+        <div class="dialog-message">翌月の売上報告が既に登録されているため、当月の売上報告は編集できません。</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('b-warning')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- B: エラー -->
+<div class="dialog-overlay" id="b-error">
+  <div class="dialog-b">
+    <div class="dialog-header">
+      <div class="dialog-icon danger">
+        <!-- x-circle -->
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <div>
+        <div class="dialog-title">エラーが発生しました</div>
+        <div class="dialog-message">保存中にエラーが発生しました。時間をおいて再度お試しください。</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('b-error')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     パターン C ダイアログ
+     ============================================================ -->
+
+<!-- C: 確認 -->
+<div class="dialog-overlay" id="c-confirm">
+  <div class="dialog-c">
+    <div class="dialog-icon-wrap confirm">
+      <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+    </div>
+    <div class="dialog-title">保存しますか？</div>
+    <div class="dialog-message">入力した売上報告を保存し、月次繰越処理を実行します。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-primary" onclick="closeDialog('c-confirm')">保存する</button>
+      <button class="btn btn-secondary" onclick="closeDialog('c-confirm')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- C: 削除確認 -->
+<div class="dialog-overlay" id="c-delete">
+  <div class="dialog-c">
+    <div class="dialog-icon-wrap danger">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <div class="dialog-title">削除しますか？</div>
+    <div class="dialog-message">「山田商店」を削除します。<br>この操作は取り消せません。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-danger" onclick="closeDialog('c-delete')">削除する</button>
+      <button class="btn btn-secondary" onclick="closeDialog('c-delete')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- C: 完了 -->
+<div class="dialog-overlay" id="c-ok">
+  <div class="dialog-c">
+    <div class="dialog-icon-wrap success">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="dialog-title">保存しました</div>
+    <div class="dialog-message">売上報告を保存し、月次繰越処理が完了しました。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-primary" onclick="closeDialog('c-ok')">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- C: エラー -->
+<div class="dialog-overlay" id="c-error">
+  <div class="dialog-c">
+    <div class="dialog-icon-wrap danger">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div>
+    <div class="dialog-title">エラーが発生しました</div>
+    <div class="dialog-message">保存中にエラーが発生しました。時間をおいて再度お試しください。</div>
+    <div class="dialog-buttons">
+      <button class="btn btn-secondary" onclick="closeDialog('c-error')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  function openDialog(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeDialog(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  // オーバーレイクリックで閉じる
+  document.querySelectorAll('.dialog-overlay').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target === el) el.classList.remove('open');
+    });
+  });
+</script>
+</body>
+</html>

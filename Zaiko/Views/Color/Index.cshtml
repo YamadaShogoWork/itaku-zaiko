@@ -32,7 +32,8 @@
     @Html.AntiForgeryToken()
     <div class="form-group">
       <label class="form-label">色名 <span style="color:var(--color-danger-text)">*</span></label>
-      <input type="text" name="colorName" class="form-input" style="width:240px;" placeholder="例: 白" required />
+      <input type="text" name="colorName" class="form-input" style="width:240px;" placeholder="例: 白" required id="add-color-name" />
+      <span id="add-color-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);align-self:center;">同名の色が既に登録されています</span>
     </div>
     <button type="submit" class="btn btn-primary">追加する</button>
   </form>
@@ -41,7 +42,7 @@
 <!-- 一覧 -->
 <div class="card">
   <div class="list-header" style="margin-bottom:var(--spacing-md);">
-    <span class="text-muted text-sm">全@Model.Count件</span>
+    <span class="text-muted text-sm">全@(Model.Count)件</span>
   </div>
   <div class="table-wrapper">
     <table class="table">
@@ -79,7 +80,10 @@
               @if (c.ProductCount == 0)
               {
                 <form method="post" action="@Url.Action("Delete", new { id = c.ColorId })" style="display:inline;"
-                      onsubmit="return confirm('色「@c.ColorName」を削除します。よろしいですか？')">
+                      data-confirm-title="削除しますか？"
+                      data-confirm-message="色「@c.ColorName」を削除します。"
+                      data-confirm-type="danger"
+                      data-confirm-ok="削除する">
                   @Html.AntiForgeryToken()
                   <button type="submit" class="action-link danger">削除</button>
                 </form>
@@ -98,6 +102,21 @@
 
 @section Scripts {
 <script>
+// 色名 重複チェック（追加フォーム）
+(function() {
+    var inp = document.getElementById('add-color-name');
+    var warn = document.getElementById('add-color-dup-warn');
+    if (!inp || !warn) return;
+    inp.addEventListener('blur', function() {
+        var name = inp.value.trim();
+        if (!name) { warn.style.display = 'none'; return; }
+        fetch('@Url.Action("CheckDuplicate", "Color")?name=' + encodeURIComponent(name))
+            .then(function(r) { return r.json(); })
+            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+            .catch(function() {});
+    });
+})();
+
 function startEdit(id) {
     document.getElementById('display-' + id).classList.add('hidden');
     document.getElementById('edit-form-' + id).classList.add('active');

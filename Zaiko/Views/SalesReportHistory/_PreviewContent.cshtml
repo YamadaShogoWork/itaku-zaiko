@@ -65,7 +65,7 @@
               bool isFirst = gi == 0;
               decimal wholesale = row.RetailPrice * row.CommissionRate;
               int salesQty = row.CarryOverQuantity + row.DeliveryTotal - row.ClosingStock;
-              decimal salesAmount = salesQty * wholesale;
+              decimal salesAmount = Math.Floor(salesQty * wholesale);
               totalCarryOver += row.CarryOverQuantity;
               totalDelivery += row.DeliveryTotal;
               totalSalesQty += salesQty;
@@ -78,7 +78,7 @@
                 }
                 <td>@(row.ColorName ?? "—")</td>
                 <td style="text-align:right">@row.RetailPrice.ToString("N0")</td>
-                <td style="text-align:right">@wholesale.ToString("N2")</td>
+                <td style="text-align:right">@Math.Floor(wholesale).ToString("N0")</td>
                 <td style="text-align:right">@row.CarryOverQuantity</td>
                 @if (dates.Count > 0)
                 {
@@ -94,7 +94,7 @@
                 <td style="text-align:right">@row.DeliveryTotal</td>
                 <td style="text-align:right">@row.ClosingStock</td>
                 <td style="text-align:right">@salesQty</td>
-                <td style="text-align:right">@salesAmount.ToString("N0")</td>
+                <td style="text-align:right">@Math.Floor(salesAmount).ToString("N0")</td>
               </tr>
             }
           }
@@ -103,7 +103,7 @@
             <td style="text-align:right">@totalDelivery</td>
             <td style="text-align:right">—</td>
             <td style="text-align:right">@totalSalesQty</td>
-            <td style="text-align:right">@totalSalesAmount.ToString("N0")</td>
+            <td style="text-align:right">@Math.Floor(totalSalesAmount).ToString("N0")</td>
           </tr>
         </tbody>
       </table>

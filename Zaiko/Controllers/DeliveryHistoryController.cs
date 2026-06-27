@@ -10,7 +10,7 @@ namespace Zaiko.Controllers;
 [Authorize]
 public class DeliveryHistoryController(ApplicationDbContext db) : Controller
 {
-    public async Task<IActionResult> Index(int? clientId, string? yearMonth)
+    public async Task<IActionResult> Index(int? clientId, string? yearMonth, int page = 0)
     {
         var clients = await db.Clients
             .OrderBy(c => c.ClientName)
@@ -19,45 +19,46 @@ public class DeliveryHistoryController(ApplicationDbContext db) : Controller
         var vm = new DeliveryHistoryViewModel
         {
             ClientId = clientId,
-            YearMonth = yearMonth ?? DateTime.Today.ToString("yyyy-MM"),
+            YearMonth = yearMonth,
             Clients = clients.Select(c => new SelectListItem(c.ClientName, c.ClientId.ToString())).ToList(),
-            HasSearch = clientId.HasValue || yearMonth != null
+            Page = page
         };
 
-        if (vm.HasSearch)
+        var query = db.Deliveries.Include(d => d.Client).AsQueryable();
+
+        if (clientId.HasValue)
+            query = query.Where(d => d.ClientId == clientId.Value);
+
+        if (!string.IsNullOrEmpty(yearMonth))
         {
-            var targetYearMonth = vm.YearMonth ?? DateTime.Today.ToString("yyyy-MM");
-            var query = db.Deliveries.Include(d => d.Client).AsQueryable();
-
-            if (clientId.HasValue)
-                query = query.Where(d => d.ClientId == clientId.Value);
-
-            // filter by yearMonth using Year/Month properties (ToString not translatable in LINQ)
-            var dhParts = targetYearMonth.Split('-');
+            var dhParts = yearMonth.Split('-');
             int dhYear = int.Parse(dhParts[0]);
             int dhMonth = int.Parse(dhParts[1]);
             query = query.Where(d => d.DeliveredAt.Year == dhYear && d.DeliveredAt.Month == dhMonth);
-
-            var deliveries = await query
-                .OrderByDescending(d => d.DeliveredAt)
-                .ThenByDescending(d => d.CreatedAt)
-                .ToListAsync();
-
-            vm.Rows = deliveries
-                .GroupBy(d => (d.ClientId, d.DeliveredAt, d.IsCarryOver))
-                .Select(g => new DeliveryHistoryRow
-                {
-                    ClientId = g.Key.ClientId,
-                    ClientName = g.First().Client.ClientName,
-                    DeliveredAt = g.Key.DeliveredAt,
-                    IsCarryOver = g.Key.IsCarryOver,
-                    ProductCount = g.Count(),
-                    TotalQuantity = g.Sum(d => d.Quantity)
-                })
-                .OrderByDescending(r => r.DeliveredAt)
-                .ThenBy(r => r.ClientName)
-                .ToList();
         }
+
+        var deliveries = await query
+            .OrderByDescending(d => d.DeliveredAt)
+            .ThenByDescending(d => d.CreatedAt)
+            .ToListAsync();
+
+        var allRows = deliveries
+            .GroupBy(d => (d.ClientId, d.DeliveredAt, d.IsCarryOver))
+            .Select(g => new DeliveryHistoryRow
+            {
+                ClientId = g.Key.ClientId,
+                ClientName = g.First().Client.ClientName,
+                DeliveredAt = g.Key.DeliveredAt,
+                IsCarryOver = g.Key.IsCarryOver,
+                ProductCount = g.Count(),
+                TotalQuantity = g.Sum(d => d.Quantity)
+            })
+            .OrderByDescending(r => r.DeliveredAt)
+            .ThenBy(r => r.ClientName)
+            .ToList();
+
+        vm.TotalCount = allRows.Count;
+        vm.Rows = allRows.Skip(page * DeliveryHistoryViewModel.PageSize).Take(DeliveryHistoryViewModel.PageSize).ToList();
 
         return View(vm);
     }

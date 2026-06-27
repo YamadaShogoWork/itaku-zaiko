@@ -10,6 +10,14 @@ namespace Zaiko.Controllers;
 [Authorize]
 public class ColorController(ApplicationDbContext db) : Controller
 {
+    [HttpGet]
+    public async Task<IActionResult> CheckDuplicate(string name, int? currentId = null)
+    {
+        var trimmed = (name ?? "").Trim();
+        bool exists = await db.Colors.AnyAsync(c => c.ColorName == trimmed && (currentId == null || c.ColorId != currentId));
+        return Json(new { exists });
+    }
+
     public async Task<IActionResult> Index()
     {
         var colors = await db.Colors

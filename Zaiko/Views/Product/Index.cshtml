@@ -70,7 +70,10 @@
                 @if (!row.HasRelatedData)
                 {
                   <form method="post" action="@Url.Action("Delete", new { id = row.ProductId })" style="display:inline;"
-                        onsubmit="return confirm('商品「@grp.ProductName@(row.ColorName != null ? " " + row.ColorName : "")」を削除します。\nよろしいですか？')">
+                        data-confirm-title="削除しますか？"
+                        data-confirm-message="商品「@grp.ProductName@(row.ColorName != null ? " " + row.ColorName : "")」を削除します。"
+                        data-confirm-type="danger"
+                        data-confirm-ok="削除する">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="action-link danger">削除</button>
                   </form>

@@ -15,7 +15,10 @@ package-lock.json
 # テスト・一時ファイル
 test_browser.js
 check_users.js
-screenshot_*.png
+screenshots/
+*.png
+*.log
+/*.xlsx
 
 # 環境設定
 appsettings.Development.json

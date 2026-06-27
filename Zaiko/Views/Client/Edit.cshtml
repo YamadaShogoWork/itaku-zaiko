@@ -2,7 +2,8 @@
 @{
     ViewData["Title"] = Model.ClientId.HasValue ? "取引先編集" : "取引先登録";
     var indexed = Model.Products.Select((p, i) => (p, i)).ToList();
-    var groups = indexed.GroupBy(x => x.p.ProductName).ToList();
+    var checkedGroups  = indexed.Where(x => x.p.IsChecked).GroupBy(x => x.p.ProductName).ToList();
+    var uncheckedGroups = indexed.Where(x => !x.p.IsChecked).GroupBy(x => x.p.ProductName).ToList();
 }
 
 @section Styles {
@@ -14,15 +15,49 @@
 .field-error { font-size: var(--font-size-sm); color: var(--color-danger-text); }
 .form-actions { display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg); }
 
-.product-name-cell { vertical-align: middle; font-weight: 500; min-width: 160px; }
-.group-label { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; }
-.group-label input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent); }
+.product-name-cell { vertical-align: middle; font-weight: 500; }
 .row-disabled td { color: var(--color-text-muted); }
 .row-disabled .wholesale-price { color: var(--color-text-muted); }
 .rate-input-wrap { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-xs); }
 .rate-input { width: 80px; height: 32px; text-align: right; padding: 0 var(--spacing-sm); }
 .rate-input:disabled { background: var(--color-bg-page); color: var(--color-text-muted); cursor: not-allowed; }
-.empty-row td { text-align: center; color: var(--color-text-muted); padding: var(--spacing-xl); }
+
+/* ドラッグハンドル */
+.col-handle-cell { width: 32px; padding: 0 !important; }
+.drag-handle {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 36px; padding: 6px 8px;
+  cursor: grab; color: var(--color-text-muted); user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover { color: var(--color-accent); }
+.drag-handle svg { width: 16px; height: 16px; flex-shrink: 0; }
+.row-disabled .drag-handle { visibility: hidden; }
+
+/* チェックボックス列 */
+.col-checkbox-cell { width: 44px; text-align: center; }
+.col-checkbox-cell input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent); }
+
+/* SortableJS */
+.sortable-ghost td { background: var(--color-accent-light) !important; opacity: 0.6; }
+.sortable-chosen td { background: #FFF8EE !important; }
+
+/* 区切り行 */
+.divider-row td {
+  background: var(--color-bg-page);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  padding: 4px var(--spacing-md);
+  text-align: left;
+}
+
+/* 並び替えヒント */
+.sort-hint {
+  display: flex; align-items: center; gap: var(--spacing-sm);
+  font-size: var(--font-size-xs); color: var(--color-text-muted);
+  margin-bottom: var(--spacing-sm);
+}
+.sort-hint svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 .status-section { margin-top: var(--spacing-xl); }
 .status-row { display: flex; align-items: center; gap: var(--spacing-lg); }
@@ -45,8 +80,9 @@
         <label asp-for="ClientName" class="form-label">
           取引先名 <span class="required-mark">*</span>
         </label>
-        <input asp-for="ClientName" class="form-input" placeholder="例: ○○商会" />
+        <input asp-for="ClientName" class="form-input" placeholder="例: ○○商会" id="client-name-input" />
         <span asp-validation-for="ClientName" class="field-error"></span>
+        <span id="client-name-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);">同名の取引先が既に登録されています</span>
       </div>
       <div class="form-group">
         <label asp-for="FaxNumber" class="form-label">FAX番号</label>
@@ -64,10 +100,28 @@
     }
     else
     {
+      <div class="sort-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        取扱商品は左端のアイコンをドラッグして並び替えできます。この順番で納品登録・売上報告・帳票に表示されます。
+      </div>
       <div class="table-wrapper">
-        <table class="table">
+        <table class="table" id="product-table">
+          <colgroup>
+            <col style="width:32px">
+            <col style="width:44px">
+            <col>
+            <col style="width:80px">
+            <col style="width:90px">
+            <col style="width:140px">
+            <col style="width:90px">
+          </colgroup>
           <thead>
             <tr>
+              <th></th>
+              <th></th>
               <th>品名</th>
               <th>色</th>
               <th class="text-right">上代（円）</th>
@@ -75,38 +129,44 @@
               <th class="text-right">下代（円）</th>
             </tr>
           </thead>
-          <tbody>
-            @{ int groupIdx = 0; }
-            @foreach (var grp in groups)
-            {
-              var items = grp.ToList();
-              int rowspan = items.Count;
-              bool groupChecked = items.Any(x => x.p.IsChecked);
 
+          @* 取扱あり（ドラッグ可） *@
+          @foreach (var grp in checkedGroups)
+          {
+            var items = grp.ToList();
+            int rowspan = items.Count;
+            <tbody class="product-group checked" data-name="@grp.Key">
               @for (int gi = 0; gi < items.Count; gi++)
               {
                 var (p, listIdx) = items[gi];
                 bool isFirst = gi == 0;
-                string rowCls = p.IsChecked ? "product-row" : "product-row row-disabled";
                 decimal wholesale = p.RetailPrice * p.CommissionRate;
-
-                <tr class="@rowCls" data-group="@groupIdx">
+                <tr>
                   @if (isFirst)
                   {
-                    <td rowspan="@rowspan" class="product-name-cell">
-                      <label class="group-label">
-                        <input type="checkbox" class="group-check"
-                               data-group="@groupIdx"
-                               @(groupChecked ? "checked" : "") />
-                        @p.ProductName
-                      </label>
+                    <td class="col-handle-cell" rowspan="@rowspan">
+                      <div class="drag-handle" title="ドラッグして並び替え">
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <circle cx="9"  cy="5"  r="1.5" fill="currentColor"/>
+                          <circle cx="15" cy="5"  r="1.5" fill="currentColor"/>
+                          <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+                          <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                          <circle cx="9"  cy="19" r="1.5" fill="currentColor"/>
+                          <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+                        </svg>
+                      </div>
                     </td>
+                    <td class="col-checkbox-cell" rowspan="@rowspan">
+                      <input type="checkbox" class="group-check" checked />
+                    </td>
+                    <td class="product-name-cell" rowspan="@rowspan">@p.ProductName</td>
                   }
                   <td>
                     <input type="hidden" name="Products[@listIdx].ProductId" value="@p.ProductId" />
+                    <input type="hidden" name="Products[@listIdx].SortOrder"
+                           class="sort-order-hidden" value="@p.SortOrder" />
                     <input type="hidden" name="Products[@listIdx].IsChecked"
-                           class="is-checked-hidden" data-group="@groupIdx"
-                           value="@(p.IsChecked ? "true" : "false")" />
+                           class="is-checked-hidden" value="true" />
                     @(p.ColorName ?? "—")
                   </td>
                   <td class="text-right">@p.RetailPrice.ToString("N0")</td>
@@ -114,24 +174,77 @@
                     <div class="rate-input-wrap">
                       <input type="number" step="0.001" min="0" max="1"
                              class="form-input rate-input"
-                             data-group="@groupIdx"
                              data-retail="@p.RetailPrice"
                              data-list-idx="@listIdx"
-                             value="@p.CommissionRate.ToString("0.###")"
-                             @(!p.IsChecked ? "disabled" : "") />
+                             value="@p.CommissionRate.ToString("0.###")" />
                       <input type="hidden" name="Products[@listIdx].CommissionRate"
                              class="rate-hidden" data-list-idx="@listIdx"
                              value="@p.CommissionRate" />
                     </div>
                   </td>
                   <td class="text-right">
-                    <span class="wholesale-price">@wholesale.ToString("N0")</span>
+                    <span class="wholesale-price">@Math.Floor(wholesale).ToString("N0")</span>
                   </td>
                 </tr>
               }
-              groupIdx++;
-            }
+            </tbody>
+          }
+
+          <tbody class="divider-row">
+            <tr><td colspan="7">— 取扱なし（チェックを入れると追加できます）—</td></tr>
           </tbody>
+
+          @* 取扱なし（ドラッグ不可） *@
+          @foreach (var grp in uncheckedGroups)
+          {
+            var items = grp.ToList();
+            int rowspan = items.Count;
+            <tbody class="product-group row-disabled" data-name="@grp.Key">
+              @for (int gi = 0; gi < items.Count; gi++)
+              {
+                var (p, listIdx) = items[gi];
+                bool isFirst = gi == 0;
+                <tr>
+                  @if (isFirst)
+                  {
+                    <td class="col-handle-cell" rowspan="@rowspan">
+                      <div class="drag-handle"></div>
+                    </td>
+                    <td class="col-checkbox-cell" rowspan="@rowspan">
+                      <input type="checkbox" class="group-check" />
+                    </td>
+                    <td class="product-name-cell" rowspan="@rowspan">@p.ProductName</td>
+                  }
+                  <td>
+                    <input type="hidden" name="Products[@listIdx].ProductId" value="@p.ProductId" />
+                    <input type="hidden" name="Products[@listIdx].SortOrder"
+                           class="sort-order-hidden" value="@p.SortOrder" />
+                    <input type="hidden" name="Products[@listIdx].IsChecked"
+                           class="is-checked-hidden" value="false" />
+                    @(p.ColorName ?? "—")
+                  </td>
+                  <td class="text-right">@p.RetailPrice.ToString("N0")</td>
+                  <td>
+                    <div class="rate-input-wrap">
+                      <input type="number" step="0.001" min="0" max="1"
+                             class="form-input rate-input"
+                             data-retail="@p.RetailPrice"
+                             data-list-idx="@listIdx"
+                             value="@p.CommissionRate.ToString("0.###")"
+                             disabled />
+                      <input type="hidden" name="Products[@listIdx].CommissionRate"
+                             class="rate-hidden" data-list-idx="@listIdx"
+                             value="@p.CommissionRate" />
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="wholesale-price">—</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          }
+
         </table>
       </div>
     }
@@ -160,10 +273,12 @@
             <span class="badge">無効</span>
           }
         </span>
-        <form method="post" action="@Url.Action("ToggleActive", new { id = Model.ClientId })">
+        <form id="toggle-active-form" method="post" action="@Url.Action("ToggleActive", new { id = Model.ClientId })">
           @Html.AntiForgeryToken()
-          <button type="submit" class="btn @(Model.IsActive ? "btn-secondary" : "btn-primary")"
-                  onclick="return confirm('@(Model.IsActive ? "この取引先を無効化しますか？" : "この取引先を有効化しますか？")')">
+          <button type="button" class="btn @(Model.IsActive ? "btn-secondary" : "btn-primary")"
+                  data-confirm-title="@(Model.IsActive ? "この取引先を無効化しますか？" : "この取引先を有効化しますか？")"
+                  data-confirm-ok="@(Model.IsActive ? "無効化する" : "有効化する")"
+                  data-confirm-form="toggle-active-form">
             @(Model.IsActive ? "無効化する" : "有効化する")
           </button>
         </form>
@@ -174,33 +289,63 @@
 
 @section Scripts {
 @await Html.PartialAsync("_ValidationScriptsPartial")
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
-// グループチェックボックス操作
-document.querySelectorAll('.group-check').forEach(function(chk) {
-    chk.addEventListener('change', function() {
-        var g = this.dataset.group;
-        var on = this.checked;
-        document.querySelectorAll('tr[data-group="' + g + '"]').forEach(function(tr) {
-            tr.classList.toggle('row-disabled', !on);
-        });
-        document.querySelectorAll('.is-checked-hidden[data-group="' + g + '"]').forEach(function(el) {
-            el.value = on ? 'true' : 'false';
-        });
-        document.querySelectorAll('.rate-input[data-group="' + g + '"]').forEach(function(el) {
-            el.disabled = !on;
-        });
+var HANDLE_SVG = '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="5" r="1.5" fill="currentColor"/><circle cx="15" cy="5" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="19" r="1.5" fill="currentColor"/><circle cx="15" cy="19" r="1.5" fill="currentColor"/></svg>';
+
+var table = document.getElementById('product-table');
+if (table) {
+    var divider = table.querySelector('tbody.divider-row');
+
+    new Sortable(table, {
+        draggable: 'tbody.product-group.checked',
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen'
     });
-});
+
+    table.addEventListener('change', function(e) {
+        var checkbox = e.target;
+        if (!checkbox.classList.contains('group-check')) return;
+
+        var tbody = checkbox.closest('tbody.product-group');
+        if (!tbody) return;
+
+        var handle = tbody.querySelector('.drag-handle');
+        var rateInputs = tbody.querySelectorAll('.rate-input');
+        var isCheckedHiddens = tbody.querySelectorAll('.is-checked-hidden');
+
+        if (checkbox.checked) {
+            tbody.classList.remove('row-disabled');
+            tbody.classList.add('checked');
+            handle.innerHTML = HANDLE_SVG;
+            handle.title = 'ドラッグして並び替え';
+            rateInputs.forEach(function(inp) { inp.disabled = false; });
+            isCheckedHiddens.forEach(function(inp) { inp.value = 'true'; });
+            table.insertBefore(tbody, divider);
+        } else {
+            tbody.classList.remove('checked');
+            tbody.classList.add('row-disabled');
+            handle.innerHTML = '';
+            handle.title = '';
+            rateInputs.forEach(function(inp) { inp.disabled = true; });
+            isCheckedHiddens.forEach(function(inp) { inp.value = 'false'; });
+            table.appendChild(tbody);
+        }
+    });
+}
 
 // 掛け率入力 → 下代リアルタイム更新
 document.querySelectorAll('.rate-input').forEach(function(inp) {
     function sync() {
         var retail = parseFloat(inp.dataset.retail) || 0;
-        var rate = parseFloat(inp.value) || 0;
-        var wholesale = retail * rate;
+        var rate   = parseFloat(inp.value) || 0;
         var tr = inp.closest('tr');
-        tr.querySelector('.wholesale-price').textContent = wholesale.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
-
+        if (tr) {
+            var priceEl = tr.querySelector('.wholesale-price');
+            if (priceEl) priceEl.textContent = Math.floor(retail * rate).toLocaleString('ja-JP');
+        }
         var idx = inp.dataset.listIdx;
         var hidden = document.querySelector('.rate-hidden[data-list-idx="' + idx + '"]');
         if (hidden) hidden.value = inp.value;
@@ -209,16 +354,44 @@ document.querySelectorAll('.rate-input').forEach(function(inp) {
     inp.addEventListener('change', sync);
 });
 
+// 取引先名 重複チェック
+(function() {
+    var inp = document.getElementById('client-name-input');
+    var warn = document.getElementById('client-name-dup-warn');
+    if (!inp || !warn) return;
+    var currentId = '@(Model.ClientId?.ToString() ?? "")';
+    inp.addEventListener('blur', function() {
+        var name = inp.value.trim();
+        if (!name) { warn.style.display = 'none'; return; }
+        var url = '@Url.Action("CheckDuplicate", "Client")?name=' + encodeURIComponent(name) + (currentId ? '&currentId=' + currentId : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+            .catch(function() {});
+    });
+})();
+
 function confirmSave() {
-    // 保存前にrate-inputの値をhiddenに同期
+    if (table) {
+        // 並び順を hidden に反映
+        var order = 0;
+        table.querySelectorAll('tbody.product-group.checked').forEach(function(tbody) {
+            order++;
+            tbody.querySelectorAll('.sort-order-hidden').forEach(function(inp) { inp.value = order; });
+        });
+    }
+    // 掛け率の最終同期
     document.querySelectorAll('.rate-input').forEach(function(inp) {
         var idx = inp.dataset.listIdx;
         var hidden = document.querySelector('.rate-hidden[data-list-idx="' + idx + '"]');
         if (hidden) hidden.value = inp.value;
     });
-    if (confirm('取引先情報を保存します。よろしいですか？')) {
-        document.getElementById('edit-form').submit();
-    }
+    Dialog.confirm({
+        title: '保存しますか？',
+        message: '取引先情報を保存します。',
+        confirmText: '保存する',
+        onConfirm: function() { document.getElementById('edit-form').submit(); }
+    });
 }
 </script>
 }

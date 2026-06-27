@@ -18,7 +18,7 @@
 </div>
 
 <div class="list-header">
-  <span class="text-muted text-sm">全@Model.Count件</span>
+  <span class="text-muted text-sm">全@(Model.Count)件</span>
   <a href="@Url.Action("Edit")" class="btn btn-primary">+ 新規登録</a>
 </div>
 
@@ -56,7 +56,10 @@
               @if (c.IsActive)
               {
                 <form method="post" action="@Url.Action("Delete", new { id = c.ClientId })" style="display:inline;"
-                      onsubmit="return confirm('取引先「@c.ClientName」を削除します。\n関連データがある場合は削除の代わりに無効化されます。\nよろしいですか？')">
+                      data-confirm-title="削除しますか？"
+                      data-confirm-message="取引先「@c.ClientName」を削除します。関連データがある場合は削除の代わりに無効化されます。"
+                      data-confirm-type="danger"
+                      data-confirm-ok="削除する">
                   @Html.AntiForgeryToken()
                   <button type="submit" class="action-link danger" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;">削除</button>
                 </form>

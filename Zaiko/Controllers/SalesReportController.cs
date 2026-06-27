@@ -25,7 +25,7 @@ public class SalesReportController(
         var vm = new SalesReportInputViewModel
         {
             ClientId = clientId,
-            YearMonth = yearMonth,
+            YearMonth = yearMonth ?? GetDefaultYearMonth(),
             Clients = clients.Select(c => new SelectListItem(c.ClientName, c.ClientId.ToString())).ToList()
         };
 
@@ -200,7 +200,7 @@ public class SalesReportController(
 
         int rowIndex = 0;
         var productRows = clientProducts
-            .OrderBy(cp => cp.Product.ProductName)
+            .OrderBy(cp => cp.SortOrder)
             .ThenBy(cp => cp.Product.ColorId)
             .Select(cp =>
             {
@@ -247,6 +247,12 @@ public class SalesReportController(
                 Rows = g.ToList()
             })
             .ToList();
+    }
+
+    private static string GetDefaultYearMonth()
+    {
+        var today = DateTime.Today;
+        return (today.Day <= 15 ? today.AddMonths(-1) : today).ToString("yyyy-MM");
     }
 
     private static string GetNextYearMonth(string yearMonth)

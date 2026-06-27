@@ -446,3 +446,100 @@ a:hover {
 .gap-sm        { gap: var(--spacing-sm); }
 .gap-md        { gap: var(--spacing-md); }
 .justify-between { justify-content: space-between; }
+
+/* =============================
+   ダイアログ（共通）
+   ============================= */
+.dialog-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0, 0, 0, 0.45);
+  z-index:         1000;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  animation:       dialog-overlay-in 0.15s ease;
+}
+
+.dialog-overlay[hidden] {
+  display: none;
+}
+
+@keyframes dialog-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialog-box-in {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.dialog-box {
+  background:    var(--color-bg-card);
+  border:        0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow:    0 8px 32px rgba(0, 0, 0, 0.18);
+  width:         360px;
+  max-width:     90vw;
+  padding:       var(--spacing-xl);
+  text-align:    center;
+  animation:     dialog-box-in 0.15s ease;
+}
+
+.dialog-icon-wrap {
+  width:           56px;
+  height:          56px;
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  margin:          0 auto var(--spacing-md);
+}
+
+.dialog-icon-wrap svg {
+  width:           26px;
+  height:          26px;
+  fill:            none;
+  stroke-width:    2;
+  stroke-linecap:  round;
+  stroke-linejoin: round;
+}
+
+.dialog-icon-wrap.confirm { background: var(--color-accent-light); }
+.dialog-icon-wrap.confirm svg { stroke: var(--color-accent); }
+
+.dialog-icon-wrap.danger  { background: var(--color-danger-bg); }
+.dialog-icon-wrap.danger  svg { stroke: var(--color-danger-text); }
+
+.dialog-icon-wrap.success { background: var(--color-success-bg); }
+.dialog-icon-wrap.success svg { stroke: var(--color-success-text); }
+
+.dialog-icon-wrap.warning { background: var(--color-warning-bg); }
+.dialog-icon-wrap.warning svg { stroke: var(--color-warning-text); }
+
+.dialog-icon-wrap.info    { background: var(--color-info-bg); }
+.dialog-icon-wrap.info    svg { stroke: var(--color-info-text); }
+
+.dialog-box .dialog-title {
+  font-size:     var(--font-size-lg);
+  font-weight:   500;
+  margin-bottom: var(--spacing-sm);
+}
+
+.dialog-box .dialog-message {
+  font-size:     var(--font-size-sm);
+  color:         var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+  line-height:   1.7;
+}
+
+.dialog-buttons {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--spacing-sm);
+}
+
+.dialog-buttons .btn {
+  width: 100%;
+}

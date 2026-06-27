@@ -10,6 +10,14 @@ namespace Zaiko.Controllers;
 [Authorize]
 public class ClientController(ApplicationDbContext db) : Controller
 {
+    [HttpGet]
+    public async Task<IActionResult> CheckDuplicate(string name, int? currentId = null)
+    {
+        var trimmed = (name ?? "").Trim();
+        bool exists = await db.Clients.AnyAsync(c => c.ClientName == trimmed && (currentId == null || c.ClientId != currentId));
+        return Json(new { exists });
+    }
+
     public async Task<IActionResult> Index()
     {
         var clients = await db.Clients
@@ -32,6 +40,7 @@ public class ClientController(ApplicationDbContext db) : Controller
         var vm = new ClientEditViewModel();
         var checkedProductIds = new HashSet<int>();
         var existingRates = new Dictionary<int, decimal>();
+        var existingSortOrders = new Dictionary<int, int>();
 
         if (id.HasValue)
         {
@@ -46,9 +55,10 @@ public class ClientController(ApplicationDbContext db) : Controller
             vm.IsActive = client.IsActive;
             checkedProductIds = client.ClientProducts.Select(cp => cp.ProductId).ToHashSet();
             existingRates = client.ClientProducts.ToDictionary(cp => cp.ProductId, cp => cp.CommissionRate);
+            existingSortOrders = client.ClientProducts.ToDictionary(cp => cp.ProductId, cp => cp.SortOrder);
         }
 
-        vm.Products = await BuildProductRows(checkedProductIds, existingRates);
+        vm.Products = await BuildProductRows(checkedProductIds, existingRates, existingSortOrders);
         return View(vm);
     }
 
@@ -133,7 +143,7 @@ public class ClientController(ApplicationDbContext db) : Controller
     }
 
     private async Task<List<ClientProductRowViewModel>> BuildProductRows(
-        HashSet<int> checkedIds, Dictionary<int, decimal> existingRates)
+        HashSet<int> checkedIds, Dictionary<int, decimal> existingRates, Dictionary<int, int> existingSortOrders)
     {
         var products = await db.Products
             .Include(p => p.Color)
@@ -141,15 +151,22 @@ public class ClientController(ApplicationDbContext db) : Controller
             .ThenBy(p => p.ColorId)
             .ToListAsync();
 
-        return products.Select(p => new ClientProductRowViewModel
-        {
-            ProductId = p.ProductId,
-            ProductName = p.ProductName,
-            ColorName = p.Color?.ColorName,
-            RetailPrice = p.RetailPrice,
-            IsChecked = checkedIds.Contains(p.ProductId),
-            CommissionRate = existingRates.TryGetValue(p.ProductId, out var r) ? r : p.CommissionRate
-        }).ToList();
+        return products
+            .Select(p => new ClientProductRowViewModel
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                ColorName = p.Color?.ColorName,
+                RetailPrice = p.RetailPrice,
+                IsChecked = checkedIds.Contains(p.ProductId),
+                CommissionRate = existingRates.TryGetValue(p.ProductId, out var r) ? r : p.CommissionRate,
+                SortOrder = existingSortOrders.TryGetValue(p.ProductId, out var so) ? so : int.MaxValue
+            })
+            .OrderBy(r => r.IsChecked ? 0 : 1)
+            .ThenBy(r => r.SortOrder)
+            .ThenBy(r => r.ProductName)
+            .ThenBy(r => r.ColorName)
+            .ToList();
     }
 
     private async Task ReloadDisplayInfo(List<ClientProductRowViewModel> rows)
@@ -181,6 +198,7 @@ public class ClientController(ApplicationDbContext db) : Controller
             if (cp != null)
             {
                 cp.CommissionRate = row.CommissionRate;
+                cp.SortOrder = row.SortOrder;
             }
             else
             {
@@ -188,7 +206,8 @@ public class ClientController(ApplicationDbContext db) : Controller
                 {
                     ClientId = clientId,
                     ProductId = row.ProductId,
-                    CommissionRate = row.CommissionRate
+                    CommissionRate = row.CommissionRate,
+                    SortOrder = row.SortOrder
                 });
             }
         }

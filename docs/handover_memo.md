@@ -13,11 +13,12 @@
 
 ## 現在のステータス
 
-**実装完了。動作確認・バグ修正フェーズ。**
+**全タスク実装完了。手動テスト待ち。**
 
 - フェーズ0〜6（基盤・マスタ・ユーザー管理・サービス・納品・売上報告・ダッシュボード）の実装がすべて完了（2026-06-22）
+- 追加タスク18件（`docs/tasks.md`）の実装がすべて完了（2026-06-27）
 - GitHubリポジトリ: https://github.com/YamadaShogoWork/itaku-zaiko
-- ログイン・ダッシュボード表示まで動作確認済み。各画面の一連フロー（取引先登録→商品→納品→売上報告→Excel出力）は未テスト
+- Playwright自動テスト 34/34 通過済み（2026-06-23時点）。追加タスク対応後の手動テストは未実施
 
 ### 実装済み画面
 - `screen_specs/`: `sales-report.md`, `sales-report-history.md`, `delivery.md`, `delivery-history.md`, `client.md`, `client-edit.md`, `product.md`, `product-edit.md`, `color.md`, `users.md`, `user-edit.md`, `dashboard.md`
@@ -38,11 +39,10 @@
 
 ## 次のステップ
 
-1. **各画面の動作確認・バグ修正**（優先）
-   - 取引先登録 → 商品登録 → 色登録 → 納品登録 → 売上報告入力 → Excel出力 の一連フロー
-   - Playwrightによるブラウザ自動テストが利用可能（Node.js・Chromiumインストール済み）
-2. **Excel出力の確認**（納品時・売上報告保存時・再出力の3パターン）
-3. 問題なければ本番運用開始
+1. **手動テスト**（`docs/manual_test.md` の手順に従う）
+   - テストデータ投入バッチ（`/SeedData`）でデータを準備してから実施する
+   - Excel出力の確認（納品時・売上報告保存時・再出力の3パターン）を含む
+2. 問題なければ本番運用開始
 
 ---
 

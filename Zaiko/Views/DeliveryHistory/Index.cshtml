@@ -11,6 +11,7 @@
 .action-link:hover { text-decoration:underline; }
 .action-link.danger { color:var(--color-danger-text); }
 .action-link:last-child { margin-right:0; }
+.paging { display:flex; align-items:center; gap:var(--spacing-md); margin-top:var(--spacing-md); justify-content:center; font-size:var(--font-size-sm); }
 </style>
 }
 
@@ -45,74 +46,86 @@
              value="@Model.YearMonth" />
     </div>
     <button type="submit" class="btn btn-secondary">絞り込む</button>
+    <a href="@Url.Action("Index")" class="btn btn-secondary">クリア</a>
   </form>
 </div>
 
 <!-- 一覧 -->
-@if (!Model.HasSearch)
-{
-  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
-    条件を選択して「絞り込む」をクリックしてください
-  </div>
-}
-else
-{
-  <div class="card">
-    <div class="table-wrapper">
-      <table class="table">
-        <thead>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>納品日</th>
+          <th>取引先</th>
+          <th style="text-align:right">品目数</th>
+          <th style="text-align:right">合計数量</th>
+          <th>種別</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Rows.Any())
+        {
+          <tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">該当する納品記録がありません</td></tr>
+        }
+        @foreach (var row in Model.Rows)
+        {
+          string dateStr = row.DeliveredAt.ToString("yyyy-MM-dd");
           <tr>
-            <th>納品日</th>
-            <th>取引先</th>
-            <th style="text-align:right">品目数</th>
-            <th style="text-align:right">合計数量</th>
-            <th>種別</th>
-            <th>操作</th>
+            <td>@row.DeliveredAt.ToString("yyyy年M月d日")</td>
+            <td>@row.ClientName</td>
+            <td style="text-align:right">@row.ProductCount</td>
+            <td style="text-align:right">@row.TotalQuantity</td>
+            <td>
+              @if (row.IsCarryOver)
+              {
+                <span class="badge badge-info">繰越</span>
+              }
+              else
+              {
+                <span class="badge badge-success">通常</span>
+              }
+            </td>
+            <td>
+              @if (!row.IsCarryOver)
+              {
+                <a href="@Url.Action("Index", "Delivery", new { clientId = row.ClientId, date = dateStr })"
+                   class="action-link">編集</a>
+                <a href="@Url.Action("DownloadExcel", "Delivery", new { clientId = row.ClientId, date = dateStr })"
+                   class="action-link">帳票</a>
+              }
+              <form method="post" action="@Url.Action("Delete")" style="display:inline;"
+                    data-confirm-title="削除しますか？"
+                    data-confirm-message="@(row.DeliveredAt.ToString("yyyy年M月d日"))の納品記録（@row.ClientName）を削除します。"
+                    data-confirm-type="danger"
+                    data-confirm-ok="削除する">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="clientId" value="@row.ClientId" />
+                <input type="hidden" name="deliveredAt" value="@dateStr" />
+                <input type="hidden" name="isCarryOver" value="@row.IsCarryOver.ToString().ToLower()" />
+                <input type="hidden" name="returnYearMonth" value="@Model.YearMonth" />
+                <button type="submit" class="action-link danger">削除</button>
+              </form>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          @if (!Model.Rows.Any())
-          {
-            <tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">該当する納品記録がありません</td></tr>
-          }
-          @foreach (var row in Model.Rows)
-          {
-            string dateStr = row.DeliveredAt.ToString("yyyy-MM-dd");
-            <tr>
-              <td>@row.DeliveredAt.ToString("yyyy年M月d日")</td>
-              <td>@row.ClientName</td>
-              <td style="text-align:right">@row.ProductCount</td>
-              <td style="text-align:right">@row.TotalQuantity</td>
-              <td>
-                @if (row.IsCarryOver)
-                {
-                  <span class="badge badge-info">繰越</span>
-                }
-                else
-                {
-                  <span class="badge badge-success">通常</span>
-                }
-              </td>
-              <td>
-                @if (!row.IsCarryOver)
-                {
-                  <a href="@Url.Action("Index", "Delivery", new { clientId = row.ClientId, date = dateStr })"
-                     class="action-link">編集</a>
-                }
-                <form method="post" action="@Url.Action("Delete")" style="display:inline;"
-                      onsubmit="return confirm('@(row.DeliveredAt.ToString("yyyy年M月d日"))の納品記録（@row.ClientName）を削除します。\nよろしいですか？')">
-                  @Html.AntiForgeryToken()
-                  <input type="hidden" name="clientId" value="@row.ClientId" />
-                  <input type="hidden" name="deliveredAt" value="@dateStr" />
-                  <input type="hidden" name="isCarryOver" value="@row.IsCarryOver.ToString().ToLower()" />
-                  <input type="hidden" name="returnYearMonth" value="@Model.YearMonth" />
-                  <button type="submit" class="action-link danger">削除</button>
-                </form>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (Model.HasPrev || Model.HasNext)
+{
+  <div class="paging">
+    @if (Model.HasPrev)
+    {
+      <a href="@Url.Action("Index", new { clientId = Model.ClientId, yearMonth = Model.YearMonth, page = Model.Page - 1 })" class="btn btn-secondary">前へ</a>
+    }
+    <span>@(Model.Page * Zaiko.ViewModels.DeliveryHistoryViewModel.PageSize + 1)〜@(Math.Min((Model.Page + 1) * Zaiko.ViewModels.DeliveryHistoryViewModel.PageSize, Model.TotalCount)) / 全@(Model.TotalCount)件</span>
+    @if (Model.HasNext)
+    {
+      <a href="@Url.Action("Index", new { clientId = Model.ClientId, yearMonth = Model.YearMonth, page = Model.Page + 1 })" class="btn btn-secondary">次へ</a>
+    }
   </div>
 }

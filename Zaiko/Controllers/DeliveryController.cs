@@ -148,7 +148,7 @@ public class DeliveryController(
             .ToDictionaryAsync(d => d.ProductId, d => d.Quantity);
 
         var rows = clientProducts
-            .OrderBy(cp => cp.Product.ProductName)
+            .OrderBy(cp => cp.SortOrder)
             .ThenBy(cp => cp.Product.ColorId)
             .Select(cp => new DeliveryProductRow
             {
@@ -208,7 +208,7 @@ public class DeliveryController(
             .ToList();
 
         var rows = clientProducts
-            .OrderBy(cp => cp.Product.ProductName)
+            .OrderBy(cp => cp.SortOrder)
             .ThenBy(cp => cp.Product.ColorId)
             .Select(cp =>
             {

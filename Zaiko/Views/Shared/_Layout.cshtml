@@ -107,7 +107,20 @@
   </main>
 </div>
 
+<!-- ダイアログ（共通） -->
+<div id="dialog-overlay" class="dialog-overlay" hidden>
+  <div class="dialog-box">
+    <div id="dialog-icon-wrap" class="dialog-icon-wrap confirm">
+      <svg id="dialog-icon-svg" viewBox="0 0 24 24"></svg>
+    </div>
+    <div id="dialog-title" class="dialog-title"></div>
+    <div id="dialog-message" class="dialog-message"></div>
+    <div id="dialog-buttons" class="dialog-buttons"></div>
+  </div>
+</div>
+
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 <script>
   const toast = document.getElementById('toast');

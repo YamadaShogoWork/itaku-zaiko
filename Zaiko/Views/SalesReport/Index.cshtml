@@ -17,7 +17,7 @@
 .required-cell input { border-color:var(--color-accent); }
 .total-row td { font-weight:500; background:var(--color-bg-page); }
 .table-actions { display:flex; gap:var(--spacing-md); justify-content:flex-end; margin-top:var(--spacing-md); }
-td.num { text-align:right; }
+td.num, th.num { text-align:right; white-space:nowrap; min-width:4.5em; }
 </style>
 }
 
@@ -137,10 +137,6 @@ td.num { text-align:right; }
               {
                 bool isFirst = row == grp.Rows.First();
                 decimal wholesale = row.RetailPrice * row.CommissionRate;
-                int salesQty = row.ClosingStock.HasValue
-                    ? row.CarryOverQuantity + row.DeliveryTotal - row.ClosingStock.Value
-                    : 0;
-                decimal salesAmount = salesQty * wholesale;
                 totalDelivery += row.DeliveryTotal;
 
                 <tr class="sr-row"
@@ -153,7 +149,7 @@ td.num { text-align:right; }
                   }
                   <td>@(row.ColorName ?? "—")</td>
                   <td class="num">@row.RetailPrice.ToString("N0")</td>
-                  <td class="num">@wholesale.ToString("N2")</td>
+                  <td class="num">@Math.Floor(wholesale).ToString("N0")</td>
                   <td class="num">@row.CarryOverQuantity</td>
                   @if (dates.Count > 0)
                   {
@@ -173,13 +169,13 @@ td.num { text-align:right; }
                     <input type="hidden" name="Items[@row.RowIndex].ProductId" value="@row.ProductId" />
                     <input type="number" name="Items[@row.RowIndex].ClosingStock"
                            class="form-input closing-input sr-closing"
-                           min="0" value="@row.ClosingStock"
+                           min="0"
                            placeholder="—"
                            @(Model.IsReadOnly ? "disabled" : "")
                            @(row.ClosingStockRequired ? "data-required=true" : "") />
                   </td>
-                  <td class="num sales-qty">@(row.ClosingStock.HasValue ? salesQty.ToString() : "—")</td>
-                  <td class="num sales-amount">@(row.ClosingStock.HasValue ? salesAmount.ToString("N2") : "—")</td>
+                  <td class="num sales-qty">—</td>
+                  <td class="num sales-amount">—</td>
                 </tr>
                 ri++;
               }
@@ -200,7 +196,7 @@ td.num { text-align:right; }
     {
       <div class="table-actions">
         <button type="button" class="btn btn-secondary"
-                onclick="if(confirm('入力中の期末在庫をすべてクリアしますか？')) clearAll()">クリア</button>
+                onclick="Dialog.confirm({ title: '入力をクリアしますか？', message: '入力中の期末在庫をすべてクリアします。', confirmText: 'クリアする', onConfirm: clearAll })">クリア</button>
         <button type="button" class="btn btn-primary" onclick="submitSave()">保存する</button>
       </div>
     }
@@ -232,9 +228,9 @@ function recalcAll() {
         } else {
             var closing = parseInt(raw) || 0;
             var qty = carryOver + delivTotal - closing;
-            var amt = qty * wholesale;
+            var amt = Math.floor(qty * wholesale);
             qtyEl.textContent = qty;
-            amtEl.textContent = amt.toLocaleString('ja-JP', { minimumFractionDigits:2, maximumFractionDigits:2 });
+            amtEl.textContent = amt.toLocaleString('ja-JP');
             totalQty += qty;
             totalAmount += amt;
         }
@@ -242,11 +238,11 @@ function recalcAll() {
     var tqEl = document.getElementById('total-sales-qty');
     var taEl = document.getElementById('total-sales-amount');
     if (tqEl) tqEl.textContent = totalQty;
-    if (taEl) taEl.textContent = totalAmount.toLocaleString('ja-JP', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    if (taEl) taEl.textContent = totalAmount.toLocaleString('ja-JP');
     var ssqEl = document.getElementById('status-sales-qty');
     var ssaEl = document.getElementById('status-sales-amount');
     if (ssqEl) ssqEl.textContent = totalQty;
-    if (ssaEl) ssaEl.textContent = totalAmount.toLocaleString('ja-JP', { minimumFractionDigits:0, maximumFractionDigits:0 });
+    if (ssaEl) ssaEl.textContent = totalAmount.toLocaleString('ja-JP');
 }
 
 document.querySelectorAll('.sr-closing').forEach(function(inp) {
@@ -265,12 +261,15 @@ function submitSave() {
     var missing = false;
     required.forEach(function(inp) { if (!inp.value && inp.value !== '0') missing = true; });
     if (missing) {
-        alert('期首在庫が存在する商品の期末在庫は必須です。');
+        Dialog.alert({ title: '入力エラー', message: '期首在庫が存在する商品の期末在庫を入力してください。', type: 'error', closeText: '閉じる' });
         return;
     }
-    if (confirm('売上報告を保存してExcelを出力します。よろしいですか？')) {
-        document.getElementById('sr-form').submit();
-    }
+    Dialog.confirm({
+        title: '保存しますか？',
+        message: '売上報告を保存してExcelを出力します。',
+        confirmText: '保存する',
+        onConfirm: function() { document.getElementById('sr-form').submit(); }
+    });
 }
 
 @if (ViewData["DownloadClientId"] != null && ViewData["DownloadYearMonth"] != null)

@@ -14,8 +14,7 @@ public class ProductEditViewModel
     public int RetailPrice { get; set; }
 
     [Required(ErrorMessage = "掛け率は必須です")]
-    [Range(0.0, 1.0, ErrorMessage = "掛け率は0〜1の範囲で入力してください")]
-    public decimal CommissionRate { get; set; }
+    public decimal CommissionRate { get; set; } = 0.8m;
 
     public decimal OriginalCommissionRate { get; set; }
     public bool HasClientProducts { get; set; }

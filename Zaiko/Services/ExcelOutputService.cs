@@ -116,7 +116,7 @@ public class ExcelOutputService
                 }
 
                 SetNum(ws.Cell(r, 3), item.RetailPrice, "#,##0");
-                SetNum(ws.Cell(r, 4), wholesale, "#,##0");
+                SetNum(ws.Cell(r, 4), Math.Floor(wholesale), "#,##0");
                 SetNum(ws.Cell(r, 5), item.CarryOverQuantity);
 
                 for (int j = 0; j < 4; j++)
@@ -129,7 +129,7 @@ public class ExcelOutputService
                 {
                     SetNum(ws.Cell(r, 11), item.ClosingStock.Value);
                     SetNum(ws.Cell(r, 12), salesQty!.Value);
-                    SetNum(ws.Cell(r, 13), salesAmt!.Value, "#,##0");
+                    SetNum(ws.Cell(r, 13), Math.Floor(salesAmt!.Value), "#,##0");
                 }
 
                 ApplyThinBorder(ws.Range(r, 1, r, 13));
@@ -178,7 +178,7 @@ public class ExcelOutputService
                 data.Rows.Where(r => r.ClosingStock.HasValue).Sum(r =>
                 {
                     int sq = r.CarryOverQuantity + r.DeliveryQuantities.Values.Sum() - r.ClosingStock!.Value;
-                    return sq * (r.RetailPrice * r.CommissionRate);
+                    return Math.Floor(sq * (r.RetailPrice * r.CommissionRate));
                 }), "#,##0");
         }
 

@@ -6,6 +6,7 @@ public class ClientProduct : AuditableEntity
     public int ClientId { get; set; }
     public int ProductId { get; set; }
     public decimal CommissionRate { get; set; }
+    public int SortOrder { get; set; }
 
     public Client Client { get; set; } = null!;
     public Product Product { get; set; } = null!;

@@ -8,4 +8,5 @@ public class ClientProductRowViewModel
     public int RetailPrice { get; set; }
     public bool IsChecked { get; set; }
     public decimal CommissionRate { get; set; }
+    public int SortOrder { get; set; }
 }

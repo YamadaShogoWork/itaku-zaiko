@@ -27,6 +27,8 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
         [Required(ErrorMessage = "パスワードを入力してください")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
     }
 
     public async Task OnGetAsync(string? returnUrl = null)
@@ -46,7 +48,7 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
             return Page();
 
         var result = await signInManager.PasswordSignInAsync(
-            Input.UserName, Input.Password, isPersistent: false, lockoutOnFailure: false);
+            Input.UserName, Input.Password, isPersistent: Input.RememberMe, lockoutOnFailure: false);
 
         if (result.Succeeded)
             return LocalRedirect(ReturnUrl);

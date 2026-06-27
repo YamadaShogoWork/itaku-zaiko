@@ -20,7 +20,8 @@
 .modal-title { font-size:var(--font-size-lg); font-weight:500; margin-bottom:var(--spacing-md); }
 .modal-actions { display:flex; gap:var(--spacing-md); justify-content:flex-end; margin-top:var(--spacing-lg); }
 #preview-content { min-height:80px; }
-td.num { text-align:right; }
+td.num, th.num { text-align:right; }
+.paging { display:flex; align-items:center; gap:var(--spacing-md); margin-top:var(--spacing-md); justify-content:center; font-size:var(--font-size-sm); }
 </style>
 }
 
@@ -55,19 +56,12 @@ td.num { text-align:right; }
              value="@Model.YearMonth" />
     </div>
     <button type="submit" class="btn btn-secondary">絞り込む</button>
+    <a href="@Url.Action("Index")" class="btn btn-secondary">クリア</a>
   </form>
 </div>
 
 <!-- 一覧 -->
-@if (!Model.HasSearch)
-{
-  <div class="card" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">
-    条件を選択して「絞り込む」をクリックしてください
-  </div>
-}
-else
-{
-  <div class="card">
+<div class="card">
     <div class="table-wrapper">
       <table class="table">
         <thead>
@@ -94,7 +88,7 @@ else
               <td>@row.ClientName</td>
               <td class="num">@row.ProductCount</td>
               <td class="num">@row.TotalSalesQty</td>
-              <td class="num">@row.TotalSalesAmount.ToString("N0")</td>
+              <td class="num">@Math.Floor(row.TotalSalesAmount).ToString("N0")</td>
               <td>
                 @if (row.CanEdit)
                 {
@@ -112,7 +106,10 @@ else
                 @if (row.CanDelete)
                 {
                   <form method="post" action="@Url.Action("Delete")" style="display:inline;"
-                        onsubmit="return confirm('@ymLabel の売上報告（@row.ClientName）を削除します。\nよろしいですか？')">
+                        data-confirm-title="削除しますか？"
+                        data-confirm-message="@ymLabel の売上報告（@row.ClientName）を削除します。"
+                        data-confirm-type="danger"
+                        data-confirm-ok="削除する">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="clientId" value="@row.ClientId" />
                     <input type="hidden" name="yearMonth" value="@row.YearMonth" />
@@ -131,6 +128,20 @@ else
         </tbody>
       </table>
     </div>
+</div>
+
+@if (Model.HasPrev || Model.HasNext)
+{
+  <div class="paging">
+    @if (Model.HasPrev)
+    {
+      <a href="@Url.Action("Index", new { clientId = Model.ClientId, yearMonth = Model.YearMonth, page = Model.Page - 1 })" class="btn btn-secondary">前へ</a>
+    }
+    <span>@(Model.Page * Zaiko.ViewModels.SalesReportHistoryViewModel.PageSize + 1)〜@(Math.Min((Model.Page + 1) * Zaiko.ViewModels.SalesReportHistoryViewModel.PageSize, Model.TotalCount)) / 全@(Model.TotalCount)件</span>
+    @if (Model.HasNext)
+    {
+      <a href="@Url.Action("Index", new { clientId = Model.ClientId, yearMonth = Model.YearMonth, page = Model.Page + 1 })" class="btn btn-secondary">次へ</a>
+    }
   </div>
 }
 

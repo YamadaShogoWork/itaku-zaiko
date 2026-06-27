@@ -25,6 +25,12 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromDays(60);
+    options.SlidingExpiration = true;
+});
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<StockCalculationService>();
 builder.Services.AddScoped<ExcelOutputService>();

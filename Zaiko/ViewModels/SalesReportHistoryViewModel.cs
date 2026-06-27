@@ -8,7 +8,11 @@ public class SalesReportHistoryViewModel
     public string? YearMonth { get; set; }
     public List<SelectListItem> Clients { get; set; } = [];
     public List<SalesReportHistoryRow> Rows { get; set; } = [];
-    public bool HasSearch { get; set; }
+    public int Page { get; set; }
+    public int TotalCount { get; set; }
+    public const int PageSize = 100;
+    public bool HasPrev => Page > 0;
+    public bool HasNext => (Page + 1) * PageSize < TotalCount;
 }
 
 public class SalesReportHistoryRow
