@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<Zaiko.Models.ApplicationUser> SignInManager
+@inject IWebHostEnvironment Env
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string Nav(string name) => ctrl == name ? "nav-item active" : "nav-item";
@@ -71,6 +72,15 @@
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       ユーザー管理
     </a>
+
+    @if (Env.IsDevelopment())
+    {
+      <span class="nav-section-label" style="color:var(--color-danger-text)">デバッグ</span>
+      <a class="@Nav("SeedData")" href="/SeedData">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        テストデータ投入
+      </a>
+    }
 
     @if (SignInManager.IsSignedIn(User))
     {

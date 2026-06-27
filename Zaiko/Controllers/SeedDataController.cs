@@ -13,21 +13,56 @@ public class SeedDataController(ApplicationDbContext db, IWebHostEnvironment env
     {
         if (!env.IsDevelopment()) return NotFound();
         return Content("""
-            <html><body>
-            <h2>テストデータ投入</h2>
-            <p>既存データを全て削除してテストデータを投入します。</p>
-            <form method="post" action="/SeedData/Seed">
-              <label>パターン:
-                <select name="pattern">
-                  <option value="A">A（最小）: 取引先2・商品4・色3・納品2ヶ月・SR1ヶ月</option>
-                  <option value="B">B（標準）: 取引先5・商品10・色5・納品6ヶ月・SR5ヶ月</option>
-                  <option value="C">C（大量）: 取引先15・商品30・色8・納品12ヶ月・SR11ヶ月</option>
-                </select>
-              </label>
-              <button type="submit">投入する</button>
-            </form>
+            <html><head><meta charset="utf-8">
+            <style>
+              body { font-family: sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+              h2 { margin-bottom: 24px; }
+              section { border: 1px solid #ddd; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+              section h3 { margin: 0 0 8px; font-size: 1rem; }
+              section p { margin: 0 0 12px; color: #555; font-size: 0.9rem; }
+              select { margin-right: 8px; padding: 4px 8px; }
+              button { padding: 6px 16px; border-radius: 4px; border: 1px solid #999; cursor: pointer; background: #f5f5f5; }
+              button.danger { background: #fee; border-color: #c33; color: #c00; }
+            </style>
+            </head><body>
+            <h2>デバッグ: データ管理</h2>
+            <section>
+              <h3>テストデータ投入</h3>
+              <p>業務データ（取引先・商品・色・納品・売上報告）を全て削除してテストデータを投入します。ユーザーはそのまま残ります。</p>
+              <form method="post" action="/SeedData/Seed">
+                <label>パターン:
+                  <select name="pattern">
+                    <option value="A">A（最小）: 取引先2・商品4・色3・納品2ヶ月・SR1ヶ月</option>
+                    <option value="B">B（標準）: 取引先5・商品10・色5・納品6ヶ月・SR5ヶ月</option>
+                    <option value="C">C（大量）: 取引先15・商品30・色8・納品12ヶ月・SR11ヶ月</option>
+                  </select>
+                </label>
+                <button type="submit">投入する</button>
+              </form>
+            </section>
+            <section>
+              <h3>業務データを全て削除</h3>
+              <p>業務データ（取引先・商品・色・納品・売上報告）を全て削除します。ユーザーはそのまま残るのでログインは引き続き可能です。</p>
+              <form method="post" action="/SeedData/DeleteAll" onsubmit="return confirm('業務データを全て削除しますか？');">
+                <button type="submit" class="danger">削除する</button>
+              </form>
+            </section>
             </body></html>
-            """, "text/html");
+            """, "text/html; charset=utf-8");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteAll()
+    {
+        if (!env.IsDevelopment()) return NotFound();
+        db.SalesReports.RemoveRange(db.SalesReports);
+        db.Deliveries.RemoveRange(db.Deliveries);
+        db.ClientProducts.RemoveRange(db.ClientProducts);
+        db.Clients.RemoveRange(db.Clients);
+        db.Products.RemoveRange(db.Products);
+        db.Colors.RemoveRange(db.Colors);
+        await db.SaveChangesAsync();
+        return Content("<html><head><meta charset=\"utf-8\"></head><body>業務データを削除しました。ユーザーはそのまま残っています。<a href='/SeedData'>戻る</a></body></html>", "text/html; charset=utf-8");
     }
 
     [HttpPost]
@@ -222,6 +257,6 @@ public class SeedDataController(ApplicationDbContext db, IWebHostEnvironment env
         db.SalesReports.AddRange(salesReports);
         await db.SaveChangesAsync();
 
-        return Content($"パターン{pattern}のテストデータを投入しました。<a href='/'>ホームへ</a>", "text/html");
+        return Content($"<html><head><meta charset=\"utf-8\"></head><body>パターン{pattern}のテストデータを投入しました。<a href='/'>ホームへ</a></body></html>", "text/html; charset=utf-8");
     }
 }
