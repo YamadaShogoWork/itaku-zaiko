@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>掛け率スピナー — モックアップ</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: var(--spacing-xl);
+    }
+
+    .demo-card {
+      width: 320px;
+    }
+
+    /* スピナー全体のラッパー */
+    .spinner-group {
+      display:     flex;
+      align-items: stretch;
+      height:      40px;
+    }
+
+    /* ブラウザのネイティブ上下矢印を非表示 */
+    .spinner-input::-webkit-inner-spin-button,
+    .spinner-input::-webkit-outer-spin-button {
+      appearance: none;
+    }
+    .spinner-input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    .spinner-input {
+      flex:          1;
+      height:        100%;
+      padding:       0 var(--spacing-sm);
+      font-size:     var(--font-size-base);
+      font-family:   var(--font-family);
+      color:         var(--color-text-primary);
+      background:    var(--color-bg-card);
+      border:        0.5px solid var(--color-border-input);
+      border-radius: 0;
+      outline:       none;
+      text-align:    center;
+      transition:    border-color 0.15s;
+    }
+
+    .spinner-input:focus {
+      border-color: var(--color-border-focus);
+      position:     relative;
+      z-index:      1;
+    }
+
+    .spinner-btn {
+      width:         40px;
+      height:        100%;
+      padding:       0;
+      font-size:     18px;
+      line-height:   1;
+      font-family:   var(--font-family);
+      color:         var(--color-text-secondary);
+      background:    var(--color-bg-page);
+      border:        0.5px solid var(--color-border-input);
+      cursor:        pointer;
+      flex-shrink:   0;
+      display:       flex;
+      align-items:   center;
+      justify-content: center;
+      transition:    background 0.12s, color 0.12s;
+      user-select:   none;
+    }
+
+    .spinner-btn:hover {
+      background: var(--color-accent-light);
+      color:      var(--color-accent);
+    }
+
+    .spinner-btn:active {
+      background: var(--color-accent);
+      color:      #fff;
+    }
+
+    .spinner-btn-minus {
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      border-right:  none;
+    }
+
+    .spinner-btn-plus {
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      border-left:   none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card demo-card">
+  <div class="card-title">掛け率スピナー（モックアップ）</div>
+
+  <div class="form-group">
+    <label class="form-label" for="commission-rate">掛け率（標準値）<span style="color:var(--color-danger-text);margin-left:2px;">*</span></label>
+    <div class="spinner-group">
+      <button type="button" class="spinner-btn spinner-btn-minus" onclick="changeRate(-0.1)" title="−0.1">−</button>
+      <input
+        class="spinner-input"
+        type="number"
+        id="commission-rate"
+        step="any"
+        value="0.80"
+        placeholder="例: 0.8"
+      />
+      <button type="button" class="spinner-btn spinner-btn-plus" onclick="changeRate(0.1)" title="＋0.1">＋</button>
+    </div>
+    <span class="form-hint">0.1ずつ増減できます</span>
+  </div>
+</div>
+
+<script>
+  function changeRate(delta) {
+    const input = document.getElementById('commission-rate');
+    const current = parseFloat(input.value) || 0;
+    const next = Math.round((current + delta) * 1000) / 1000;
+    input.value = next.toFixed(2);
+  }
+</script>
+
+</body>
+</html>

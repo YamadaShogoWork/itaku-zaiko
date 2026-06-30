@@ -27,6 +27,7 @@
     /* 取扱商品テーブル */
     .input-table {
       width:           100%;
+      table-layout:    fixed;
       border-collapse: collapse;
       font-size:       var(--font-size-sm);
     }
@@ -69,24 +70,36 @@
       cursor: pointer;
     }
 
-    .input-table .col-rate input {
-      width:         80px;
-      height:        32px;
-      text-align:    center;
-      padding:       0 var(--spacing-sm);
-      font-size:     var(--font-size-sm);
-      font-family:   var(--font-family);
-      color:         var(--color-text-primary);
-      background:    #FFFDF8;
-      border:        1.5px solid var(--color-accent);
-      border-radius: var(--radius-sm);
-      outline:       none;
+    .input-table th:nth-child(3),
+    .input-table td:nth-child(3) {
+      padding-left:  1em;
+      padding-right: 1em;
     }
 
-    .input-table .col-rate input:disabled {
-      background:    var(--color-bg-page);
-      border-color:  var(--color-border-input);
-      color:         var(--color-text-muted);
+    .input-table .col-rate {
+      padding-left:  10px;
+      padding-right: 10px;
+    }
+
+    .input-table .col-rate .spinner-group-sm {
+      width: fit-content;
+    }
+
+    .input-table .col-rate .spinner-input {
+      flex: none;
+      width: 4em;
+    }
+
+    .input-table .col-rate .spinner-input {
+      font-size:  var(--font-size-sm);
+      background: #FFFDF8;
+      border:     1.5px solid var(--color-accent);
+    }
+
+    .input-table .col-rate .spinner-input:disabled {
+      background:   var(--color-bg-page);
+      border-color: var(--color-border-input);
+      color:        var(--color-text-muted);
     }
 
     /* 行が未選択（取扱なし）の場合は薄く表示 */
@@ -215,11 +228,11 @@
           <thead>
             <tr>
               <th style="width:60px;">取扱</th>
-              <th style="text-align:left; width:160px;">品名</th>
-              <th style="width:90px;">色</th>
-              <th style="width:90px;">上代</th>
-              <th style="width:110px;">掛け率</th>
-              <th style="width:90px;">下代（参考）</th>
+              <th style="text-align:left;">品名</th>
+              <th style="width:10em; padding-left:1em; padding-right:1em;">色</th>
+              <th style="width:180px;">上代</th>
+              <th style="width:128px; padding-left:10px; padding-right:10px; text-align:center;">掛け率</th>
+              <th style="width:220px;">下代（参考）</th>
             </tr>
           </thead>
           <tbody>
@@ -229,25 +242,25 @@
               <td class="col-name" rowspan="4">山菜図鑑Tシャツ</td>
               <td>白</td>
               <td class="col-calc">3,000</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">2,250</td>
             </tr>
             <tr>
               <td>アッシュ</td>
               <td class="col-calc">3,000</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">2,250</td>
             </tr>
             <tr>
               <td>黒</td>
               <td class="col-calc">3,000</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">2,250</td>
             </tr>
             <tr>
               <td>インディゴ</td>
               <td class="col-calc">3,000</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">2,250</td>
             </tr>
 
@@ -256,7 +269,7 @@
               <td class="col-name">うどTシャツ</td>
               <td>黒</td>
               <td class="col-calc">2,800</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
 
@@ -265,19 +278,19 @@
               <td class="col-name" rowspan="3">こごめTシャツ</td>
               <td>白</td>
               <td class="col-calc">2,800</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
             <tr class="row-disabled">
               <td>アッシュ</td>
               <td class="col-calc">2,800</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
             <tr class="row-disabled">
               <td>黒</td>
               <td class="col-calc">2,800</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
 
@@ -286,13 +299,13 @@
               <td class="col-name" rowspan="2">山菜図鑑パーカー</td>
               <td>黒</td>
               <td class="col-calc">5,500</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.8" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.8" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
             <tr class="row-disabled">
               <td>アッシュ</td>
               <td class="col-calc">5,500</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.8" disabled /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button><input class="spinner-input" type="number" step="any" value="0.8" data-decimals="2" disabled /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button></div></td>
               <td class="col-calc">—</td>
             </tr>
 
@@ -301,7 +314,7 @@
               <td class="col-name">山菜図鑑トートバッグ</td>
               <td>—</td>
               <td class="col-calc">1,800</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">1,350</td>
             </tr>
 
@@ -310,7 +323,7 @@
               <td class="col-name">山菜図鑑手ぬぐい</td>
               <td>—</td>
               <td class="col-calc">1,200</td>
-              <td class="col-rate"><input type="number" step="0.01" min="0" max="1" value="0.75" /></td>
+              <td class="col-rate"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button><input class="spinner-input" type="number" step="any" value="0.75" data-decimals="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button></div></td>
               <td class="col-calc">900</td>
             </tr>
 
@@ -327,6 +340,19 @@
 
   </main>
 </div>
+
+<script>
+  document.querySelectorAll('.spinner-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseFloat(btn.dataset.delta);
+      const input = btn.closest('.spinner-group, .spinner-group-sm').querySelector('.spinner-input');
+      const decimals = parseInt(input.dataset.decimals ?? '0');
+      const current = parseFloat(input.value) || 0;
+      const next = Math.round((current + delta) * 1000) / 1000;
+      input.value = decimals > 0 ? next.toFixed(decimals) : String(Math.round(next));
+    });
+  });
+</script>
 
 </body>
 </html>

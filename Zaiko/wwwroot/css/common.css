@@ -448,6 +448,102 @@ a:hover {
 .justify-between { justify-content: space-between; }
 
 /* =============================
+   数値スピナー入力
+   ============================= */
+.spinner-input::-webkit-inner-spin-button,
+.spinner-input::-webkit-outer-spin-button { appearance: none; }
+.spinner-input[type=number] { -moz-appearance: textfield; }
+
+.spinner-group {
+  display: flex;
+  align-items: stretch;
+  height: 40px;
+}
+
+.spinner-group-sm {
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+}
+
+.spinner-input {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border-input);
+  border-radius: 0;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.spinner-input:focus {
+  border-color: var(--color-border-focus);
+  position: relative;
+  z-index: 1;
+}
+
+.spinner-input:disabled {
+  background: var(--color-bg-page);
+  color: var(--color-text-muted);
+}
+
+.spinner-btn {
+  width: 36px;
+  height: 100%;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  font-family: var(--font-family);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-page);
+  border: 0.5px solid var(--color-border-input);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  user-select: none;
+}
+
+.spinner-btn:hover:not(:disabled) {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.spinner-btn:active:not(:disabled) {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.spinner-btn:disabled {
+  cursor: default;
+  color: var(--color-text-muted);
+  background: var(--color-bg-page);
+}
+
+.spinner-btn-minus {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-right: none;
+}
+
+.spinner-btn-plus {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-left: none;
+}
+
+.spinner-group-sm .spinner-btn {
+  width: 28px;
+  font-size: 14px;
+}
+
+/* =============================
    ダイアログ（共通）
    ============================= */
 .dialog-overlay {

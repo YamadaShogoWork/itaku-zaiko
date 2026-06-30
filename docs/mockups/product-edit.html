@@ -160,12 +160,20 @@
           <input class="form-input" type="text" id="product-name" value="山菜図鑑Tシャツ" />
         </div>
         <div class="form-group">
-          <label class="form-label" for="retail-price">上代</label>
-          <input class="form-input" type="number" id="retail-price" value="3000" />
+          <label class="form-label" for="retail-price">上代（円）</label>
+          <div class="spinner-group">
+            <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button>
+            <input class="spinner-input" type="number" id="retail-price" step="any" value="3000" placeholder="例: 3300" />
+            <button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label" for="commission-rate">掛け率（標準値）</label>
-          <input class="form-input" type="number" id="commission-rate" step="0.01" min="0" max="1" value="0.75" />
+          <div class="spinner-group">
+            <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button>
+            <input class="spinner-input" type="number" id="commission-rate" step="any" value="0.75" placeholder="例: 0.8" data-decimals="2" />
+            <button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button>
+          </div>
         </div>
       </div>
     </div>
@@ -199,6 +207,19 @@
 
   </main>
 </div>
+
+<script>
+  document.querySelectorAll('.spinner-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseFloat(btn.dataset.delta);
+      const input = btn.closest('.spinner-group, .spinner-group-sm').querySelector('.spinner-input');
+      const decimals = parseInt(input.dataset.decimals ?? '0');
+      const current = parseFloat(input.value) || 0;
+      const next = Math.round((current + delta) * 1000) / 1000;
+      input.value = decimals > 0 ? next.toFixed(decimals) : String(Math.round(next));
+    });
+  });
+</script>
 
 </body>
 </html>

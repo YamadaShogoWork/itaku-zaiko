@@ -27,8 +27,14 @@
     /* 入力テーブル */
     .input-table {
       width:           100%;
+      min-width:       1120px;
+      table-layout:    fixed;
       border-collapse: collapse;
       font-size:       var(--font-size-sm);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
     }
 
     .input-table th {
@@ -67,27 +73,26 @@
 
     /* 期間内納品数列（薄いグレー背景） */
     .input-table .col-delivered {
-      background: var(--color-bg-page);
-      color:      var(--color-text-secondary);
+      background:    var(--color-bg-page);
+      color:         var(--color-text-secondary);
+      padding-left:  4px;
+      padding-right: 4px;
+    }
+
+    /* 日付サブヘッダーも同様に詰める */
+    .input-table thead tr:nth-child(2) th {
+      padding-left:  4px;
+      padding-right: 4px;
     }
 
     /* 期末在庫入力セル */
-    .input-table .col-input input {
-      width:         64px;
-      height:        32px;
-      text-align:    center;
-      padding:       0 var(--spacing-sm);
-      font-size:     var(--font-size-sm);
-      font-family:   var(--font-family);
-      color:         var(--color-text-primary);
-      background:    #FFFDF8;
-      border:        1.5px solid var(--color-accent);
-      border-radius: var(--radius-sm);
-      outline:       none;
-      transition:    border-color 0.15s, box-shadow 0.15s;
+    .input-table .col-input .spinner-input {
+      font-size:  var(--font-size-sm);
+      background: #FFFDF8;
+      border:     1.5px solid var(--color-accent);
     }
 
-    .input-table .col-input input:focus {
+    .input-table .col-input .spinner-input:focus {
       border-color: var(--color-accent-hover);
       box-shadow:   0 0 0 3px rgba(186, 117, 23, 0.12);
     }
@@ -283,22 +288,22 @@
         <table class="input-table">
           <thead>
             <tr>
-              <th rowspan="2" style="text-align:left; width:160px;">品名</th>
-              <th rowspan="2" style="width:70px;">色</th>
+              <th rowspan="2" style="text-align:left;">品名</th>
+              <th rowspan="2" style="width:140px;">色</th>
               <th rowspan="2" style="width:70px;">上代</th>
               <th rowspan="2" style="width:70px;">下代</th>
               <th rowspan="2" style="width:60px;">期首<br>在庫</th>
-              <th colspan="4">期間内納品数</th>
+              <th colspan="4" style="width:240px;">期間内納品数</th>
               <th rowspan="2" style="width:60px;">納品計</th>
-              <th rowspan="2" style="width:80px;">期末在庫<br><span style="font-weight:400;color:var(--color-accent);font-size:11px;">▼ FAX入力</span></th>
+              <th rowspan="2" style="width:180px;">期末在庫<br><span style="font-weight:400;color:var(--color-accent);font-size:11px;">▼ FAX入力</span></th>
               <th rowspan="2" style="width:60px;">売上<br>点数</th>
               <th rowspan="2" style="width:80px;">売上額</th>
             </tr>
             <tr>
-              <th style="width:56px;">5/8</th>
-              <th style="width:56px;">5/15</th>
-              <th style="width:56px;">5/22</th>
-              <th style="width:56px;"></th>
+              <th style="width:60px;">5/8</th>
+              <th style="width:60px;">5/15</th>
+              <th style="width:60px;">5/22</th>
+              <th style="width:60px;"></th>
             </tr>
           </thead>
           <tbody>
@@ -314,7 +319,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="1" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">2</td>
               <td class="col-calc">¥4,950</td>
             </tr>
@@ -328,7 +333,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">4</td>
-              <td class="col-input"><input type="number" min="0" value="4" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="4" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td>0</td>
               <td class="col-calc">¥0</td>
             </tr>
@@ -342,7 +347,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="3" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="3" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td>0</td>
               <td class="col-calc">¥0</td>
             </tr>
@@ -356,7 +361,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥2,475</td>
             </tr>
@@ -372,7 +377,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">0</td>
-              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="—" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="col-calc">—</td>
               <td class="col-calc">—</td>
             </tr>
@@ -388,7 +393,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="1" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥2,475</td>
             </tr>
@@ -402,7 +407,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥2,475</td>
             </tr>
@@ -416,7 +421,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="1" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥2,475</td>
             </tr>
@@ -432,7 +437,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">0</td>
-              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="—" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="col-calc">—</td>
               <td class="col-calc">—</td>
             </tr>
@@ -446,7 +451,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">0</td>
-              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="—" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="col-calc">—</td>
               <td class="col-calc">—</td>
             </tr>
@@ -462,7 +467,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">5</td>
-              <td class="col-input"><input type="number" min="0" value="3" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="3" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">2</td>
               <td class="col-calc">¥2,550</td>
             </tr>
@@ -477,7 +482,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td>0</td>
               <td class="col-calc">¥0</td>
             </tr>
@@ -492,7 +497,7 @@
               <td class="col-delivered"></td>
               <td class="col-delivered"></td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">2</td>
               <td class="col-calc">¥2,550</td>
             </tr>
@@ -507,7 +512,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥1,125</td>
             </tr>
@@ -523,7 +528,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">5</td>
-              <td class="col-input"><input type="number" min="0" value="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">5</td>
               <td class="col-calc">¥5,625</td>
             </tr>
@@ -538,7 +543,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="text-accent">1</td>
               <td class="col-calc">¥1,125</td>
             </tr>
@@ -553,7 +558,7 @@
               <td class="col-delivered">1</td>
               <td class="col-delivered"></td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" placeholder="—" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="—" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
               <td class="col-calc">—</td>
               <td class="col-calc">—</td>
             </tr>
@@ -582,6 +587,19 @@
 
   </main>
 </div>
+
+<script>
+  document.querySelectorAll('.spinner-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseFloat(btn.dataset.delta);
+      const input = btn.closest('.spinner-group, .spinner-group-sm').querySelector('.spinner-input');
+      const decimals = parseInt(input.dataset.decimals ?? '0');
+      const current = parseFloat(input.value) || 0;
+      const next = Math.round((current + delta) * 1000) / 1000;
+      input.value = decimals > 0 ? next.toFixed(decimals) : String(Math.round(next));
+    });
+  });
+</script>
 
 </body>
 </html>

@@ -18,9 +18,10 @@
 .product-name-cell { vertical-align: middle; font-weight: 500; }
 .row-disabled td { color: var(--color-text-muted); }
 .row-disabled .wholesale-price { color: var(--color-text-muted); }
-.rate-input-wrap { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-xs); }
-.rate-input { width: 80px; height: 32px; text-align: right; padding: 0 var(--spacing-sm); }
-.rate-input:disabled { background: var(--color-bg-page); color: var(--color-text-muted); cursor: not-allowed; }
+.rate-input-wrap { display: flex; align-items: center; justify-content: center; }
+.rate-input-wrap .spinner-input { flex: none; width: 4em; font-size: var(--font-size-sm); }
+.col-color { padding-left: 1em; padding-right: 1em; }
+#product-table { table-layout: fixed; }
 
 /* ドラッグハンドル */
 .col-handle-cell { width: 32px; padding: 0 !important; }
@@ -68,7 +69,7 @@
   <h1 class="page-title">@ViewData["Title"]</h1>
 </div>
 
-<form asp-controller="Client" asp-action="Edit" method="post" id="edit-form">
+<form asp-controller="Client" asp-action="Edit" method="post" id="edit-form" novalidate>
   @Html.AntiForgeryToken()
   <input type="hidden" asp-for="ClientId" />
 
@@ -113,19 +114,19 @@
             <col style="width:32px">
             <col style="width:44px">
             <col>
-            <col style="width:80px">
-            <col style="width:90px">
-            <col style="width:140px">
-            <col style="width:90px">
+            <col style="width:10em">
+            <col style="width:180px">
+            <col style="width:128px">
+            <col style="width:220px">
           </colgroup>
           <thead>
             <tr>
               <th></th>
               <th></th>
               <th>品名</th>
-              <th>色</th>
+              <th style="padding-left:1em;padding-right:1em;">色</th>
               <th class="text-right">上代（円）</th>
-              <th class="text-right">掛け率</th>
+              <th>掛け率</th>
               <th class="text-right">下代（円）</th>
             </tr>
           </thead>
@@ -161,7 +162,7 @@
                     </td>
                     <td class="product-name-cell" rowspan="@rowspan">@p.ProductName</td>
                   }
-                  <td>
+                  <td class="col-color">
                     <input type="hidden" name="Products[@listIdx].ProductId" value="@p.ProductId" />
                     <input type="hidden" name="Products[@listIdx].SortOrder"
                            class="sort-order-hidden" value="@p.SortOrder" />
@@ -172,11 +173,16 @@
                   <td class="text-right">@p.RetailPrice.ToString("N0")</td>
                   <td>
                     <div class="rate-input-wrap">
-                      <input type="number" step="0.001" min="0" max="1"
-                             class="form-input rate-input"
-                             data-retail="@p.RetailPrice"
-                             data-list-idx="@listIdx"
-                             value="@p.CommissionRate.ToString("0.###")" />
+                      <div class="spinner-group-sm">
+                        <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button>
+                        <input type="number" step="any" min="0" max="1"
+                               class="spinner-input rate-input"
+                               data-retail="@p.RetailPrice"
+                               data-list-idx="@listIdx"
+                               data-decimals="2"
+                               value="@p.CommissionRate.ToString("0.##")" />
+                        <button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button>
+                      </div>
                       <input type="hidden" name="Products[@listIdx].CommissionRate"
                              class="rate-hidden" data-list-idx="@listIdx"
                              value="@p.CommissionRate" />
@@ -215,7 +221,7 @@
                     </td>
                     <td class="product-name-cell" rowspan="@rowspan">@p.ProductName</td>
                   }
-                  <td>
+                  <td class="col-color">
                     <input type="hidden" name="Products[@listIdx].ProductId" value="@p.ProductId" />
                     <input type="hidden" name="Products[@listIdx].SortOrder"
                            class="sort-order-hidden" value="@p.SortOrder" />
@@ -226,19 +232,24 @@
                   <td class="text-right">@p.RetailPrice.ToString("N0")</td>
                   <td>
                     <div class="rate-input-wrap">
-                      <input type="number" step="0.001" min="0" max="1"
-                             class="form-input rate-input"
-                             data-retail="@p.RetailPrice"
-                             data-list-idx="@listIdx"
-                             value="@p.CommissionRate.ToString("0.###")"
-                             disabled />
+                      <div class="spinner-group-sm">
+                        <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1" disabled>−</button>
+                        <input type="number" step="any" min="0" max="1"
+                               class="spinner-input rate-input"
+                               data-retail="@p.RetailPrice"
+                               data-list-idx="@listIdx"
+                               data-decimals="2"
+                               value="@p.CommissionRate.ToString("0.##")"
+                               disabled />
+                        <button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1" disabled>＋</button>
+                      </div>
                       <input type="hidden" name="Products[@listIdx].CommissionRate"
                              class="rate-hidden" data-list-idx="@listIdx"
                              value="@p.CommissionRate" />
                     </div>
                   </td>
                   <td class="text-right">
-                    <span class="wholesale-price">—</span>
+                    <span class="wholesale-price">@Math.Floor(p.RetailPrice * p.CommissionRate).ToString("N0")</span>
                   </td>
                 </tr>
               }
@@ -321,7 +332,11 @@ if (table) {
             tbody.classList.add('checked');
             handle.innerHTML = HANDLE_SVG;
             handle.title = 'ドラッグして並び替え';
-            rateInputs.forEach(function(inp) { inp.disabled = false; });
+            rateInputs.forEach(function(inp) {
+                inp.disabled = false;
+                var grp = inp.closest('.spinner-group-sm');
+                if (grp) grp.querySelectorAll('.spinner-btn').forEach(function(b) { b.disabled = false; });
+            });
             isCheckedHiddens.forEach(function(inp) { inp.value = 'true'; });
             table.insertBefore(tbody, divider);
         } else {
@@ -329,7 +344,11 @@ if (table) {
             tbody.classList.add('row-disabled');
             handle.innerHTML = '';
             handle.title = '';
-            rateInputs.forEach(function(inp) { inp.disabled = true; });
+            rateInputs.forEach(function(inp) {
+                inp.disabled = true;
+                var grp = inp.closest('.spinner-group-sm');
+                if (grp) grp.querySelectorAll('.spinner-btn').forEach(function(b) { b.disabled = true; });
+            });
             isCheckedHiddens.forEach(function(inp) { inp.value = 'false'; });
             table.appendChild(tbody);
         }
@@ -386,6 +405,7 @@ function confirmSave() {
         var hidden = document.querySelector('.rate-hidden[data-list-idx="' + idx + '"]');
         if (hidden) hidden.value = inp.value;
     });
+    if (!document.getElementById('edit-form').reportValidity()) return;
     Dialog.confirm({
         title: '保存しますか？',
         message: '取引先情報を保存します。',

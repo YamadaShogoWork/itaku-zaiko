@@ -33,10 +33,10 @@
     <div class="form-group">
       <label class="form-label">色名 <span style="color:var(--color-danger-text)">*</span></label>
       <input type="text" name="colorName" class="form-input" style="width:240px;" placeholder="例: 白" required id="add-color-name" />
-      <span id="add-color-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);align-self:center;">同名の色が既に登録されています</span>
     </div>
     <button type="submit" class="btn btn-primary">追加する</button>
   </form>
+  <span id="add-color-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);margin-top:var(--spacing-sm);display:none;">同名の色が既に登録されています</span>
 </div>
 
 <!-- 一覧 -->
@@ -66,10 +66,11 @@
                 <span>@c.ColorName</span>
               </div>
               <form method="post" action="@Url.Action("Update", new { id = c.ColorId })"
-                    class="inline-edit-form" id="edit-form-@c.ColorId">
+                    class="inline-edit-form" id="edit-form-@c.ColorId" data-color-id="@c.ColorId">
                 @Html.AntiForgeryToken()
                 <input type="text" name="colorName" class="form-input edit-input"
                        value="@c.ColorName" required />
+                <span class="edit-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);">同名の色が既に登録されています</span>
                 <button type="submit" class="btn btn-primary" style="height:36px;padding:0 var(--spacing-md);">保存</button>
                 <button type="button" class="action-link" onclick="cancelEdit(@c.ColorId)">キャンセル</button>
               </form>
@@ -102,20 +103,39 @@
 
 @section Scripts {
 <script>
-// 色名 重複チェック（追加フォーム）
-(function() {
-    var inp = document.getElementById('add-color-name');
-    var warn = document.getElementById('add-color-dup-warn');
-    if (!inp || !warn) return;
-    inp.addEventListener('blur', function() {
+// 色名 重複チェック共通（debounce 300ms）
+function attachDupCheck(inp, warn, currentId) {
+    var timer;
+    inp.addEventListener('input', function() {
+        clearTimeout(timer);
         var name = inp.value.trim();
         if (!name) { warn.style.display = 'none'; return; }
-        fetch('@Url.Action("CheckDuplicate", "Color")?name=' + encodeURIComponent(name))
-            .then(function(r) { return r.json(); })
-            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
-            .catch(function() {});
+        timer = setTimeout(function() {
+            var url = '@Url.Action("CheckDuplicate", "Color")?name=' + encodeURIComponent(name)
+                    + (currentId ? '&currentId=' + currentId : '');
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+                .catch(function() {});
+        }, 300);
     });
-})();
+}
+
+// 追加フォーム（T-1: warn はフォーム外, T-2: input+debounce）
+attachDupCheck(
+    document.getElementById('add-color-name'),
+    document.getElementById('add-color-dup-warn'),
+    null
+);
+
+// インライン編集フォーム（T-3: currentId 渡し）
+document.querySelectorAll('.inline-edit-form').forEach(function(form) {
+    attachDupCheck(
+        form.querySelector('input[name=colorName]'),
+        form.querySelector('.edit-dup-warn'),
+        form.dataset.colorId
+    );
+});
 
 function startEdit(id) {
     document.getElementById('display-' + id).classList.add('hidden');

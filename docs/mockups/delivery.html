@@ -27,6 +27,7 @@
     /* 入力テーブル */
     .input-table {
       width:           100%;
+      table-layout:    fixed;
       border-collapse: collapse;
       font-size:       var(--font-size-sm);
     }
@@ -66,22 +67,13 @@
     }
 
     /* 納品数量入力セル */
-    .input-table .col-input input {
-      width:         64px;
-      height:        32px;
-      text-align:    center;
-      padding:       0 var(--spacing-sm);
-      font-size:     var(--font-size-sm);
-      font-family:   var(--font-family);
-      color:         var(--color-text-primary);
-      background:    #FFFDF8;
-      border:        1.5px solid var(--color-accent);
-      border-radius: var(--radius-sm);
-      outline:       none;
-      transition:    border-color 0.15s, box-shadow 0.15s;
+    .input-table .col-input .spinner-input {
+      font-size:  var(--font-size-sm);
+      background: #FFFDF8;
+      border:     1.5px solid var(--color-accent);
     }
 
-    .input-table .col-input input:focus {
+    .input-table .col-input .spinner-input:focus {
       border-color: var(--color-accent-hover);
       box-shadow:   0 0 0 3px rgba(186, 117, 23, 0.12);
     }
@@ -259,10 +251,10 @@
         <table class="input-table">
           <thead>
             <tr>
-              <th style="text-align:left; width:160px;">品名</th>
-              <th style="width:90px;">色</th>
-              <th style="width:70px;">現在庫</th>
-              <th style="width:90px;">納品数量</th>
+              <th style="text-align:left;">品名</th>
+              <th style="width:10em; padding-left:1em; padding-right:1em;">色</th>
+              <th style="width:140px;">現在庫</th>
+              <th style="width:180px;">納品数量</th>
             </tr>
           </thead>
           <tbody>
@@ -271,72 +263,72 @@
               <td class="col-name" rowspan="4">山菜図鑑Tシャツ</td>
               <td>白</td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="2" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="2" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>アッシュ</td>
               <td class="col-calc">4</td>
-              <td class="col-input"><input type="number" min="0" value="3" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="3" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>黒</td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>インディゴ</td>
               <td class="col-calc">1</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <tr>
               <td class="col-name">うどTシャツ</td>
               <td>黒</td>
               <td class="col-calc">6</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <tr>
               <td class="col-name" rowspan="3">こごめTシャツ</td>
               <td>白</td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="1" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="1" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>アッシュ</td>
               <td class="col-calc">5</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>黒</td>
               <td class="col-calc">3</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <tr>
               <td class="col-name" rowspan="2">山菜図鑑パーカー</td>
               <td>黒</td>
               <td class="col-calc">0</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
             <tr>
               <td>アッシュ</td>
               <td class="col-calc">1</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <tr>
               <td class="col-name">山菜図鑑 トートバッグ</td>
               <td>—</td>
               <td class="col-calc">2</td>
-              <td class="col-input"><input type="number" min="0" value="5" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" value="5" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <tr>
               <td class="col-name">山菜図鑑 手ぬぐい</td>
               <td>—</td>
               <td class="col-calc">4</td>
-              <td class="col-input"><input type="number" min="0" placeholder="0" /></td>
+              <td class="col-input"><div class="spinner-group-sm"><button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button><input class="spinner-input" type="number" step="any" placeholder="0" /><button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button></div></td>
             </tr>
 
             <!-- 合計行 -->
@@ -359,6 +351,19 @@
 
   </main>
 </div>
+
+<script>
+  document.querySelectorAll('.spinner-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseFloat(btn.dataset.delta);
+      const input = btn.closest('.spinner-group, .spinner-group-sm').querySelector('.spinner-input');
+      const decimals = parseInt(input.dataset.decimals ?? '0');
+      const current = parseFloat(input.value) || 0;
+      const next = Math.round((current + delta) * 1000) / 1000;
+      input.value = decimals > 0 ? next.toFixed(decimals) : String(Math.round(next));
+    });
+  });
+</script>
 
 </body>
 </html>

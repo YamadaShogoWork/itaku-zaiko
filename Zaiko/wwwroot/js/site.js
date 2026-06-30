@@ -82,3 +82,23 @@ const Dialog = (function () {
     }
   };
 }());
+
+// スピナー入力（−/＋ボタン）
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.spinner-btn');
+  if (!btn || btn.disabled) return;
+  var group = btn.closest('.spinner-group, .spinner-group-sm');
+  if (!group) return;
+  var inp = group.querySelector('.spinner-input');
+  if (!inp || inp.disabled) return;
+  var delta = parseFloat(btn.dataset.delta) || 0;
+  var decimals = parseInt(inp.dataset.decimals);
+  decimals = isNaN(decimals) ? 0 : decimals;
+  var current = parseFloat(inp.value) || 0;
+  var next = Math.round((current + delta) * 1000) / 1000;
+  var minVal = inp.min !== '' ? parseFloat(inp.min) : null;
+  if (minVal !== null && next < minVal) next = minVal;
+  inp.value = decimals > 0 ? next.toFixed(decimals) : String(Math.round(next));
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+});

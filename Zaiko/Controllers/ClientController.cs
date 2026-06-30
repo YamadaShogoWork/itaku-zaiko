@@ -112,7 +112,7 @@ public class ClientController(ApplicationDbContext db) : Controller
             .FirstOrDefaultAsync(c => c.ClientId == id);
         if (client == null) return NotFound();
 
-        bool hasRelated = client.Deliveries.Any() || client.SalesReports.Any() || client.ClientProducts.Any();
+        bool hasRelated = client.Deliveries.Any() || client.SalesReports.Any();
         if (hasRelated)
         {
             client.IsActive = false;
@@ -121,6 +121,7 @@ public class ClientController(ApplicationDbContext db) : Controller
         }
         else
         {
+            db.ClientProducts.RemoveRange(client.ClientProducts);
             db.Clients.Remove(client);
             await db.SaveChangesAsync();
             TempData["Success"] = "取引先を削除しました。";

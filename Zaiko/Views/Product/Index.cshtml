@@ -54,9 +54,6 @@
               {
                 <td rowspan="@rowspan" class="product-name-cell">
                   @grp.ProductName
-                  <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:2px;">
-                    上代: @grp.RetailPrice.ToString("N0")円 / 掛率: @grp.CommissionRate.ToString("0.###")
-                  </div>
                 </td>
               }
               <td>@(row.ColorName ?? "—")</td>

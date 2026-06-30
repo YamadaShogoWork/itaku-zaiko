@@ -60,14 +60,22 @@
         <label asp-for="RetailPrice" class="form-label">
           上代（円） <span class="required-mark">*</span>
         </label>
-        <input asp-for="RetailPrice" type="number" min="0" class="form-input" placeholder="例: 3300" />
+        <div class="spinner-group">
+          <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-1">−</button>
+          <input asp-for="RetailPrice" type="number" min="0" step="any" class="spinner-input" placeholder="例: 3300" />
+          <button type="button" class="spinner-btn spinner-btn-plus" data-delta="1">＋</button>
+        </div>
         <span asp-validation-for="RetailPrice" class="field-error"></span>
       </div>
       <div class="form-group">
         <label asp-for="CommissionRate" class="form-label">
           掛け率（標準値） <span class="required-mark">*</span>
         </label>
-        <input asp-for="CommissionRate" type="number" step="0.1" class="form-input" id="commission-rate-input" placeholder="例: 0.8" />
+        <div class="spinner-group">
+          <button type="button" class="spinner-btn spinner-btn-minus" data-delta="-0.1">−</button>
+          <input asp-for="CommissionRate" type="number" step="any" class="spinner-input" id="commission-rate-input" placeholder="例: 0.8" data-decimals="2" />
+          <button type="button" class="spinner-btn spinner-btn-plus" data-delta="0.1">＋</button>
+        </div>
         <span asp-validation-for="CommissionRate" class="field-error"></span>
       </div>
     </div>
@@ -133,7 +141,7 @@
       <div class="modal-title">掛け率の更新範囲を選択してください</div>
       <div class="modal-body">
         <p>掛け率（標準値）を変更しました。取引先ごとの掛け率設定にも反映しますか？</p>
-        <p>・<strong>標準値のみ更新</strong>: 今後新規登録する取引先設定のプレフィル値にのみ影響します。</p>
+        <p>・<strong>標準値のみ更新</strong>: 今後新規登録する取引先設定の初期値にのみ影響します。</p>
         <p>・<strong>取引先設定も一括更新</strong>: この商品に紐づく全取引先の掛け率設定を新しい値で上書きします。</p>
       </div>
       <div class="modal-actions">
@@ -183,6 +191,7 @@ function chooseCommission(updateAll) {
 }
 
 function confirmAndSubmit() {
+    if (!document.getElementById('edit-form').reportValidity()) return;
     Dialog.confirm({
         title: '保存しますか？',
         message: '商品情報を保存します。',
