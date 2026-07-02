@@ -29,8 +29,9 @@
       <label asp-for="UserName" class="form-label">
         ユーザー名 <span class="required-mark">*</span>
       </label>
-      <input asp-for="UserName" class="form-input" autocomplete="username" />
+      <input asp-for="UserName" class="form-input" autocomplete="username" id="user-name-input" />
       <span asp-validation-for="UserName" class="field-error"></span>
+      <span id="user-name-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);">同名のユーザーが既に登録されています</span>
     </div>
 
     <div class="form-group">
@@ -63,4 +64,22 @@
 
 @section Scripts {
 @await Html.PartialAsync("_ValidationScriptsPartial")
+<script>
+(function() {
+    var inp = document.getElementById('user-name-input');
+    var warn = document.getElementById('user-name-dup-warn');
+    if (!inp || !warn) return;
+    var currentId = '@(Model.UserId ?? "")';
+    inp.addEventListener('blur', function() {
+        var name = inp.value.trim();
+        if (!name) { warn.style.display = 'none'; return; }
+        var url = '@Url.Action("CheckDuplicate", "Users")?name=' + encodeURIComponent(name)
+                + (currentId ? '&currentId=' + currentId : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+            .catch(function() {});
+    });
+})();
+</script>
 }

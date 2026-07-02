@@ -9,6 +9,15 @@ namespace Zaiko.Controllers;
 [Authorize]
 public class UsersController(UserManager<ApplicationUser> userManager) : Controller
 {
+    [HttpGet]
+    public async Task<IActionResult> CheckDuplicate(string name, string? currentId = null)
+    {
+        var trimmed = (name ?? "").Trim();
+        var existing = await userManager.FindByNameAsync(trimmed);
+        bool exists = existing != null && existing.Id != currentId;
+        return Json(new { exists });
+    }
+
     public async Task<IActionResult> Index()
     {
         var currentUser = await userManager.GetUserAsync(User);

@@ -212,6 +212,41 @@ function acceptNextDialog() {
     if (!body.includes('白') || !body.includes('黒')) throw new Error('白または黒の行が見つからない');
   });
 
+  await run('3-5', '同名商品「トートバッグ」の重複登録→サーバー側エラー（保存されない）', async () => {
+    await page.goto(BASE_URL + '/Product');
+    await page.waitForLoadState('networkidle');
+    const beforeCount = (await page.$$('table tbody tr')).length;
+    await page.click('a:has-text("+ 新規登録"), button:has-text("+ 新規登録")');
+    await page.waitForLoadState('networkidle');
+    await page.fill('input[name="ProductName"]', 'トートバッグ');
+    await page.fill('input[name="RetailPrice"]', '1000');
+    await page.fill('input[name="CommissionRate"]', '0.5');
+    await page.click('#radio-color-no');
+    await page.waitForTimeout(200);
+    acceptNextDialog();
+    await page.click('button:has-text("保存する")');
+    await page.waitForTimeout(1000);
+    const body = await page.textContent('body');
+    if (!body.includes('既に登録')) throw new Error('エラーメッセージが表示されない');
+    await page.click('a:has-text("キャンセル")');
+    await page.waitForURL(/\/Product($|\?)/, { timeout: 5000 });
+    const afterCount = (await page.$$('table tbody tr')).length;
+    if (afterCount > beforeCount) throw new Error('重複商品が登録された');
+  });
+
+  await run('3-6', '商品名欄 blur で重複警告が表示される', async () => {
+    await page.click('a:has-text("+ 新規登録"), button:has-text("+ 新規登録")');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#product-name-input', 'トートバッグ');
+    await page.locator('#product-name-input').blur();
+    await page.waitForTimeout(500);
+    const warn = await page.$('#product-name-dup-warn');
+    if (!warn) throw new Error('警告要素が存在しない');
+    if (!await warn.isVisible()) throw new Error('重複警告が表示されない');
+    await page.click('a:has-text("キャンセル")');
+    await page.waitForURL(/\/Product($|\?)/, { timeout: 5000 });
+  });
+
   // ========== 4. 取引先管理 ==========
   console.log('\n=== 4. 取引先管理 ===');
 
@@ -245,6 +280,19 @@ function acceptNextDialog() {
     const url = page.url();
     const stayed = url.includes('Edit') || url.includes('Create');
     if (!stayed) throw new Error('バリデーションエラーなしで保存された');
+    await page.click('a:has-text("キャンセル")');
+    await page.waitForURL(/\/Client($|\?)/, { timeout: 5000 });
+  });
+
+  await run('4-2b', '同名取引先「ABC商店」の重複登録→サーバー側エラー（保存されない）', async () => {
+    await page.click('a:has-text("+ 新規登録"), button:has-text("+ 新規登録")');
+    await page.waitForLoadState('networkidle');
+    await page.fill('input[name="ClientName"]', 'ABC商店');
+    acceptNextDialog();
+    await page.click('button:has-text("保存する")');
+    await page.waitForTimeout(1000);
+    const body = await page.textContent('body');
+    if (!body.includes('既に登録')) throw new Error('エラーメッセージが表示されない');
     await page.click('a:has-text("キャンセル")');
     await page.waitForURL(/\/Client($|\?)/, { timeout: 5000 });
   });
@@ -339,6 +387,19 @@ function acceptNextDialog() {
     await page.waitForLoadState('networkidle');
     const body = await page.textContent('body');
     if (!body.includes('testuser')) throw new Error('testuserが一覧に表示されない');
+  });
+
+  await run('5-2b', 'ユーザー名欄 blur で重複警告が表示される', async () => {
+    await page.click('a:has-text("+ 新規登録")');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#user-name-input', 'admin');
+    await page.locator('#user-name-input').blur();
+    await page.waitForTimeout(500);
+    const warn = await page.$('#user-name-dup-warn');
+    if (!warn) throw new Error('警告要素が存在しない');
+    if (!await warn.isVisible()) throw new Error('重複警告が表示されない');
+    await page.click('a:has-text("キャンセル")');
+    await page.waitForURL(/\/Users($|\?)/, { timeout: 5000 });
   });
 
   await run('5-3', 'パスワード不一致→エラー（保存されない）', async () => {

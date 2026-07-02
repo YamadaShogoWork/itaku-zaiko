@@ -10,6 +10,14 @@ namespace Zaiko.Controllers;
 [Authorize]
 public class ProductController(ApplicationDbContext db) : Controller
 {
+    [HttpGet]
+    public async Task<IActionResult> CheckDuplicate(string name, string? currentName = null)
+    {
+        var trimmed = (name ?? "").Trim();
+        bool exists = await db.Products.AnyAsync(p => p.ProductName == trimmed && p.ProductName != currentName);
+        return Json(new { exists });
+    }
+
     public async Task<IActionResult> Index()
     {
         var products = await db.Products
@@ -94,6 +102,17 @@ public class ProductController(ApplicationDbContext db) : Controller
     {
         if (!ModelState.IsValid)
         {
+            await ReloadAllColors(vm);
+            return View(vm);
+        }
+
+        var trimmedName = vm.ProductName.Trim();
+        bool isDuplicate = vm.OriginalProductName == null
+            ? await db.Products.AnyAsync(p => p.ProductName == trimmedName)
+            : trimmedName != vm.OriginalProductName && await db.Products.AnyAsync(p => p.ProductName == trimmedName);
+        if (isDuplicate)
+        {
+            ModelState.AddModelError(nameof(vm.ProductName), $"商品名「{trimmedName}」は既に登録されています");
             await ReloadAllColors(vm);
             return View(vm);
         }

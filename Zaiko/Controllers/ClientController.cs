@@ -72,6 +72,17 @@ public class ClientController(ApplicationDbContext db) : Controller
             return View(vm);
         }
 
+        var trimmedName = vm.ClientName.Trim();
+        bool isDuplicate = vm.ClientId.HasValue
+            ? await db.Clients.AnyAsync(c => c.ClientName == trimmedName && c.ClientId != vm.ClientId.Value)
+            : await db.Clients.AnyAsync(c => c.ClientName == trimmedName);
+        if (isDuplicate)
+        {
+            ModelState.AddModelError(nameof(vm.ClientName), $"取引先名「{trimmedName}」は既に登録されています");
+            await ReloadDisplayInfo(vm.Products);
+            return View(vm);
+        }
+
         if (vm.ClientId.HasValue)
         {
             var client = await db.Clients

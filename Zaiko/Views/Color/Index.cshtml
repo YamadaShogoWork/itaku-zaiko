@@ -103,25 +103,21 @@
 
 @section Scripts {
 <script>
-// 色名 重複チェック共通（debounce 300ms）
+// 色名 重複チェック共通
 function attachDupCheck(inp, warn, currentId) {
-    var timer;
-    inp.addEventListener('input', function() {
-        clearTimeout(timer);
+    inp.addEventListener('blur', function() {
         var name = inp.value.trim();
         if (!name) { warn.style.display = 'none'; return; }
-        timer = setTimeout(function() {
-            var url = '@Url.Action("CheckDuplicate", "Color")?name=' + encodeURIComponent(name)
-                    + (currentId ? '&currentId=' + currentId : '');
-            fetch(url)
-                .then(function(r) { return r.json(); })
-                .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
-                .catch(function() {});
-        }, 300);
+        var url = '@Url.Action("CheckDuplicate", "Color")?name=' + encodeURIComponent(name)
+                + (currentId ? '&currentId=' + currentId : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+            .catch(function() {});
     });
 }
 
-// 追加フォーム（T-1: warn はフォーム外, T-2: input+debounce）
+// 追加フォーム
 attachDupCheck(
     document.getElementById('add-color-name'),
     document.getElementById('add-color-dup-warn'),

@@ -53,8 +53,9 @@
         <label asp-for="ProductName" class="form-label">
           品名 <span class="required-mark">*</span>
         </label>
-        <input asp-for="ProductName" class="form-input" placeholder="例: 山菜図鑑Tシャツ" />
+        <input asp-for="ProductName" class="form-input" placeholder="例: 山菜図鑑Tシャツ" id="product-name-input" />
         <span asp-validation-for="ProductName" class="field-error"></span>
+        <span id="product-name-dup-warn" style="display:none;font-size:var(--font-size-sm);color:var(--color-warning-text);">同名の商品が既に登録されています</span>
       </div>
       <div class="form-group">
         <label asp-for="RetailPrice" class="form-label">
@@ -155,6 +156,24 @@
 @section Scripts {
 @await Html.PartialAsync("_ValidationScriptsPartial")
 <script>
+// 品名 重複チェック
+(function() {
+    var inp = document.getElementById('product-name-input');
+    var warn = document.getElementById('product-name-dup-warn');
+    if (!inp || !warn) return;
+    var currentName = '@Html.Raw(Model.OriginalProductName ?? "")';
+    inp.addEventListener('blur', function() {
+        var name = inp.value.trim();
+        if (!name) { warn.style.display = 'none'; return; }
+        var url = '@Url.Action("CheckDuplicate", "Product")?name=' + encodeURIComponent(name)
+                + (currentName ? '&currentName=' + encodeURIComponent(currentName) : '');
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) { warn.style.display = d.exists ? '' : 'none'; })
+            .catch(function() {});
+    });
+})();
+
 // 色バリエーショントグル
 document.getElementById('radio-color-yes').addEventListener('change', function() {
     if (this.checked) document.getElementById('color-section').style.display = '';
