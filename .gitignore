@@ -13,12 +13,11 @@ node_modules/
 package-lock.json
 
 # テスト・一時ファイル
-test_browser.js
-check_users.js
 screenshots/
 *.png
 *.log
 /*.xlsx
+logs/
 
 # 環境設定
 appsettings.Development.json
